@@ -69,7 +69,7 @@ export function tenantConfig(id: string, ownerId: string, o: TenantOptions = {})
       email: null,
       website: null,
       socials: [],
-      branding: { themePreset: 'graphite', demoArtwork: false },
+      branding: { themePreset: 'black', demoArtwork: false },
       seo: {},
       features: { ai: true },
       policy: {

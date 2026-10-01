@@ -159,6 +159,40 @@ describe('grants audit', () => {
   })
 })
 
+describe('studio deletion', () => {
+  it('every tenant-owned table references its tenant with on delete cascade', async () => {
+    const missing = await sql`select c.relname from pg_class c
+      where c.relnamespace = 'public'::regnamespace and c.relkind = 'r' and c.relname <> 'tenants'
+        and not exists (select 1 from pg_constraint k where k.conrelid = c.oid and k.contype = 'f'
+                          and k.confrelid = 'public.tenants'::regclass and k.confdeltype = 'c')`
+    expect(missing.map((r) => r.relname)).toEqual([])
+  })
+
+  it('deleting a studio removes all of its rows, blocks included, and nothing of other studios', async () => {
+    const t = await createTenant()
+    const other = await createTenant()
+    const day = await localDay(t.timezone, 3)
+    const b = await clientBook(t, { startsAt: await at(t.timezone, day, '10:00') })
+    await clientBook(other, { startsAt: await at(other.timezone, day, '10:00') })
+    await ownerCall(t.ownerId, 'owner_create_block', t.id, t.resources['bay-1'], await at(t.timezone, day, '15:00'),
+      await at(t.timezone, day, '16:00'), 'maintenance', null, null)
+    await ownerCall(t.ownerId, 'owner_cancel_booking', b.booking.id, 'тест')
+    const tables = await sql<{ relname: string }[]>`select c.relname from pg_class c
+      where c.relnamespace = 'public'::regnamespace and c.relkind = 'r' and c.relname <> 'tenants'
+        and exists (select 1 from pg_attribute a where a.attrelid = c.oid and a.attname = 'tenant_id' and not a.attisdropped)`
+    const rowsOf = async (id: string) => {
+      let n = 0
+      for (const { relname } of tables) n += await count(sql`select count(*) as n from ${sql('public')}.${sql(relname)} where tenant_id = ${id}`)
+      return n
+    }
+    const otherBefore = await rowsOf(other.id)
+    expect(await rowsOf(t.id)).toBeGreaterThan(10)
+    await sql`delete from public.tenants where id = ${t.id}`
+    expect(await rowsOf(t.id)).toBe(0)
+    expect(await rowsOf(other.id)).toBe(otherBefore)
+  })
+})
+
 describe('capability tokens', () => {
   it('no plaintext token or device key is stored anywhere', async () => {
     const needles = [bookingA.token, bookingA.profileKey, bookingB.token]

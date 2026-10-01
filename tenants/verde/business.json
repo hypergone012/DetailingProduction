@@ -21,7 +21,7 @@
     ]
   },
   "branding": {
-    "themePreset": "soft-white",
+    "themePreset": "white",
     "accent": "#2e6b4a",
     "logo": "assets/logo.svg",
     "icon": "assets/icon.png",

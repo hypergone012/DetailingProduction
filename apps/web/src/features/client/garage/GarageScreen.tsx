@@ -7,17 +7,18 @@ import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { errorMessage } from '@/lib/api/http'
+import { when } from '@/lib/format'
 import { Stagger, StaggerItem } from '@/motion/Stagger'
 import { useTenant } from '@/tenant/TenantProvider'
 import { ScreenHeader } from '../layout/ScreenHeader'
-import { useProfile, useSaveVehicle } from '../data'
+import { isUpcoming, useProfile, useSaveVehicle } from '../data'
 import { EmptyState } from '../shared/Section'
 import { VehicleGlyph } from '../shared/VehicleGlyph'
 import { SheetFrame } from '../booking/steps/SheetFrame'
 import { VehicleForm } from './VehicleForm'
 
 export function GarageScreen() {
-  const { slug } = useTenant()
+  const { slug, tz, locale } = useTenant()
   const { profile, isFetching } = useProfile()
   const [adding, setAdding] = useState(false)
   const save = useSaveVehicle()
@@ -57,6 +58,7 @@ export function GarageScreen() {
           <Stagger as="ul" className="grid gap-3">
             {vehicles.map((v) => {
               const visits = profile?.bookings.filter((b) => b.vehicle_id === v.id && b.status === 'completed').length ?? 0
+              const next = profile?.bookings.filter((b) => b.vehicle_id === v.id && isUpcoming(b)).sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0]
               return (
                 <StaggerItem as="li" key={v.id}>
                   <Link to={`/s/${slug}/garage/${v.id}`} className="pressable flex items-center gap-4 rounded-2xl border border-line bg-surface p-3 shadow-card outline-none focus-visible:ring-2 focus-visible:ring-focus">
@@ -74,7 +76,9 @@ export function GarageScreen() {
                         {BODY_TYPE_LABELS[v.body_type]}
                         {v.year ? ` · ${v.year}` : ''}
                       </p>
-                      <p className="text-xs text-fg-subtle">{visits ? `Визитов: ${visits}` : 'Ещё не обслуживался'}</p>
+                      <p className="truncate text-xs text-fg-subtle first-letter:uppercase">
+                        {next ? <span className="text-accent-text">Запись: {when(next.starts_at, tz, locale)}</span> : visits ? `Визитов: ${visits}` : 'Ещё не обслуживался'}
+                      </p>
                     </div>
                     <ChevronRight className="size-5 text-fg-subtle" aria-hidden />
                   </Link>

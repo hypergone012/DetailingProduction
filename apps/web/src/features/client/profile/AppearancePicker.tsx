@@ -1,4 +1,4 @@
-import { THEME_PRESET_IDS, THEME_PRESETS, isThemePresetId, resolveTheme } from '@dp/core/theme/presets'
+import { DEFAULT_THEME_PRESET, THEME_PRESET_IDS, THEME_PRESETS, isThemePresetId, resolveTheme } from '@dp/core/theme/presets'
 import { Check } from 'lucide-react'
 import { m } from 'motion/react'
 import { cn } from '@/lib/utils'
@@ -13,7 +13,7 @@ import { useTenant } from '@/tenant/TenantProvider'
 export function AppearancePicker() {
   const { appearance, setAppearance } = useAppTheme()
   const { data } = useTenant()
-  const studioPreset = isThemePresetId(data.branding.themePreset) ? data.branding.themePreset : 'graphite'
+  const studioPreset = isThemePresetId(data.branding.themePreset) ? data.branding.themePreset : DEFAULT_THEME_PRESET
   const studio = resolveTheme(studioPreset, data.branding.accent ?? null)
   const options: { id: Appearance; label: string; surface: string; accent: string; text: string }[] = [
     { id: 'studio', label: 'Как в студии', surface: studio.surface, accent: studio.accent, text: studio.text },

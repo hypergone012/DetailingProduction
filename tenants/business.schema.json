@@ -152,13 +152,13 @@
         "themePreset": {
           "type": "string",
           "enum": [
-            "soft-white",
-            "graphite",
-            "burgundy",
-            "cobalt",
-            "forest",
-            "amber",
-            "plum"
+            "white",
+            "black",
+            "red",
+            "blue",
+            "green",
+            "yellow",
+            "purple"
           ]
         },
         "accent": {

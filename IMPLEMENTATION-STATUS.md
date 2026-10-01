@@ -64,9 +64,9 @@ react 19.3 · vite 8.3 · react-router 8.4 · @tanstack/react-query 5.104 · zod
 Проверки: `pnpm test:db` — **64 passed** (booking-engine 20, lifecycle 15, security 15, money-stats 3, outbox 5, publish 6).
 Решение: availability и размещение — в SQL (а не в TS), чтобы авторитетная проверка шла в той же транзакции, что и запись в журнал занятости.
 
-### Этап 3 — готово (кроме `verify`/`shells`, которым нужны этапы 4–5)
+### Этап 3 — готово (`verify`/`shells` доделаны в этапе 5–6)
 - `packages/core`: Zod-схема `business.json` (строгая, с перекрёстными проверками: типы ресурсов, рекомендации, пересечения часов, дубли ключей, «кислотные» акценты, требования к live), нормализация в копейки/ISO-дни, стабильные ключи медиа, canonical JSON для хеша.
-- 7 тем-пресетов (`soft-white`, `graphite`, `burgundy`, `cobalt`, `forest`, `amber`, `plum`) на семантических токенах; бренд-акцент тенанта подменяет только акцентные токены и автоматически подбирает контрастные `accent-contrast`/`accent-text`.
+- 7 тем-пресетов (`white`, `black`, `red`, `blue`, `green`, `yellow`, `purple`; до этапа 6 назывались `soft-white`/`graphite`/…, переименованы, когда `security:scan-bundle` нашёл совпадение id пресета с демо-студией GRAPHITE) на семантических токенах; бренд-акцент тенанта подменяет только акцентные токены и автоматически подбирает контрастные `accent-contrast`/`accent-text`.
 - `scripts/tenant`: `tenant:new` (из `_template`, новый uuid, статус draft), `tenant:validate` (схема + ассеты через sharp + демо-сид + уникальность id/slug), `tenant:publish` (адаптивные WebP-варианты, иконки any/maskable/apple/favicon, контент-адресуемая загрузка в Storage, владельцы через GoTrue Admin API, `api_admin_publish_tenant`, демо-сид), `tenant:schema`.
 - Тенанты: `graphite` (тёмный премиум, Москва, 4 ресурса, 7 услуг) и `verde` (светлая тема + лесной акцент, Екатеринбург UTC+5, шаг 15 мин, 3 ресурса других типов, 6 услуг).
 - Демо-иллюстрации генерируются `pnpm tenant:art` из `tenants/<slug>/art.json` (реальные фото недоступны в сети окружения) — помечены `demoArtwork: true`, live без замены запрещён.
@@ -83,3 +83,26 @@ react 19.3 · vite 8.3 · react-router 8.4 · @tanstack/react-query 5.104 · zod
 
 Проверки: `pnpm test` — **46 passed** (+ расшифровка push ключом подписчика, VAPID-подпись, ICS, тексты, токены); `pnpm test:api` — **15 passed** через реальный HTTP (gateway → Deno handler → PostgREST → Postgres/GoTrue/Storage), включая **реальную доставку зашифрованного Web Push по HTTPS** на локальный push-сервис (расшифровка, 410 → отключение подписки, без повторной отправки, demo — ничего не отправляет); `pnpm functions:check` (deno check) — OK.
 Решение: Web Push реализован на WebCrypto (а не `web-push` из npm), чтобы один и тот же код работал в Edge Runtime и в Node-тестах и проверялся расшифровкой.
+
+### Этапы 5–6 — готово (commit `5bdedf1` + доработки)
+- `apps/web`: React 19, React Router (data router), TanStack Query, Tailwind 4 (`@theme inline` поверх `--dp-*`), Astryx (тема собирается `astryx theme build`, i18n ru-RU), motion (LazyMotion strict + асинхронные features, `prefers-reduced-motion` и ручной переключатель), vite-plugin-pwa injectManifest.
+- Service worker: precache только статики сборки; навигации NetworkFirst; публичные медиа CacheFirst; bootstrap/manifest SWR; **всё под `/functions|rest|auth|storage/v1` — NetworkOnly** (приватные данные не кешируются); `CLEAR_PRIVATE` при выходе.
+- Клиент: главная (бронь первой, ближайший слот с сервера), услуги и карточка услуги, запись в bottom sheets (услуга → авто → время → подтверждение → готово, шаг в URL, черновик переживает перезагрузку), гараж с несколькими авто/фото/историей/рекомендациями, история, карточка записи (ICS, перенос по снимку записи, отмена), вход по ссылке-токену, профиль (контакты, оформление 7 тем + «как в студии», анимации, push, установка, выход с очисткой).
+- Один маршрут `/s/:slug/*`: при дочернем `*` голый `/s/:slug/` в React Router 8 ничего не рендерил (найдено проверкой в браузере). Код клиента грузится параллельно с bootstrap.
+- Закрытие потока записи — по индексу истории (системная «Назад» и «Открыть запись» не оставляют шагов в истории); гонка «результат раньше URL» закрывала экран «Вы записаны» — исправлена.
+- Демо-студия не предлагает включить уведомления.
+- `pnpm tenant:shells`: per-studio `index.html` (title, description, theme-color, OG, canonical, иконки, `<html data-scheme>` для первого кадра) + статические манифесты client/owner + `_redirects`; `vite preview` применяет те же правила.
+- `pnpm tenant:verify [--app-url]`: валидность конфига и совпадение статуса, bootstrap без приватных полей, изоляция и доступность медиа, манифесты client/owner (id/scope/start_url, иконки 192/512/maskable), слоты, наличие владельца, «демо ничего не отправляло», страницы и статические оболочки, отсутствие общих сервисов/медиа между студиями.
+- `pnpm security:scan-bundle`: значения server-only секретов, JWT с ролью ≠ anon, приватные ключи, ключи API, имена server-only переменных — в каждом файле сборки (включая source maps); названия/slug студий — в общем коде и сборке (white-label). Проверен на подложенном service-role ключе → exit 1.
+
+Найдено и исправлено попутно:
+- `api_notifications_lease` возвращал `[]`, если вся пачка оказалась недоставляемой (демо/нет подписок) — диспетчер останавливался при живых заданиях в очереди. Теперь сканирует дальше (до 20 раундов). Тест воспроизводит на старой версии.
+- Удалить студию было невозможно: блоки (`resource_occupancies` без записи) не имели каскада до `tenants`. Миграция `…012_tenant_cascade` + тест «удаление студии удаляет все её строки и не трогает другие» + аудит «каждая tenant-таблица ссылается на tenants с ON DELETE CASCADE».
+- API-тесты оставляли ~90 тестовых студий в dev-БД — teardown теперь их удаляет.
+- `db:migrate` отказывается работать, если уже применённая миграция была изменена.
+
+Проверки (2026-10-01): `pnpm typecheck` OK, `pnpm lint` OK, `pnpm test` **46 passed**, `pnpm test:db` **68 passed**, `pnpm test:api` **15 passed**, `pnpm build` OK, `pnpm tenant:verify --app-url=http://127.0.0.1:4173` **23 passed / 0 failed**, `pnpm security:scan-bundle` OK.
+Вручную в Chromium (Playwright, 390×844): обе студии, полный сценарий записи до «Вы записаны» → карточка записи → «Назад», гараж, история, профиль, услуги — без ошибок в консоли. Автоматический e2e-тест — этап 8.
+Размер: начальная загрузка клиента ≈ 144 KB gz (vendor) + 34 KB (TenantProvider) + 34 KB (ClientApp) + 42 KB CSS; экраны, шиты и motion-features грузятся по требованию с предзагрузкой в idle.
+
+### Этап 7 — в работе

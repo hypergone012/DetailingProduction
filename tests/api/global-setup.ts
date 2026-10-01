@@ -1,6 +1,7 @@
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import postgres from 'postgres'
 import type { TestProject } from 'vitest/node'
 
 /**
@@ -82,8 +83,24 @@ export default async function setup(project: TestProject) {
     tlsKey: f('key.pem'),
     tlsCert: f('cert.pem'),
   })
-  return () => {
+  return async () => {
     gateway?.kill()
+    await cleanup()
+  }
+}
+
+/**
+ * API tests run against the developer's local stack: remove what they created (studios
+ * `api-*` with everything that cascades from them, and their throw-away owner accounts),
+ * so the dev database keeps only real and demo studios.
+ */
+async function cleanup() {
+  const sql = postgres(process.env.DATABASE_URL ?? 'postgres://postgres@127.0.0.1:54322/dp_dev', { max: 1, onnotice: () => {} })
+  try {
+    await sql`delete from public.tenants where slug like 'api-%'`
+    await sql`delete from auth.users where email like '%@test.local'`
+  } finally {
+    await sql.end()
   }
 }
 

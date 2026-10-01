@@ -39,14 +39,14 @@ describe('theme presets', () => {
   }
 
   it('the light preset avoids a pure white canvas', () => {
-    const t = THEME_PRESETS['soft-white'].tokens
+    const t = THEME_PRESETS.white.tokens
     expect(t.scheme).toBe('light')
     expect(toHsl(t.bg).l).toBeLessThan(0.97)
   })
 
   it('a brand accent replaces only the accent tokens', () => {
-    const base = THEME_PRESETS.graphite.tokens
-    const branded = resolveTheme('graphite', '#d6a84a')
+    const base = THEME_PRESETS.black.tokens
+    const branded = resolveTheme('black', '#d6a84a')
     expect(branded.accent).toBe('#d6a84a')
     expect(branded.bg).toBe(base.bg)
     expect(branded.text).toBe(base.text)
@@ -55,14 +55,14 @@ describe('theme presets', () => {
   })
 
   it('a dark accent on a dark theme gets a readable accent-text', () => {
-    const t = resolveTheme('graphite', '#2e3b6b')
+    const t = resolveTheme('black', '#2e3b6b')
     expect(contrast(t.accentText, t.surface)).toBeGreaterThanOrEqual(4.5)
   })
 
   it('renders CSS variables for every token', () => {
-    const vars = themeToCssVars(THEME_PRESETS.cobalt.tokens)
+    const vars = themeToCssVars(THEME_PRESETS.blue.tokens)
     expect(vars['color-scheme']).toBe('dark')
-    expect(vars['--dp-accent']).toBe(THEME_PRESETS.cobalt.tokens.accent)
+    expect(vars['--dp-accent']).toBe(THEME_PRESETS.blue.tokens.accent)
     expect(Object.keys(vars)).toHaveLength(28)
   })
 })

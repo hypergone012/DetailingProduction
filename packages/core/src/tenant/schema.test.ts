@@ -13,7 +13,7 @@ const minimal = (): BusinessInput => ({
   name: 'Studio',
   timezone: 'Europe/Moscow',
   profile: {},
-  branding: { themePreset: 'graphite', logo: 'assets/logo.svg', hero: 'assets/hero.jpg' },
+  branding: { themePreset: 'black', logo: 'assets/logo.svg', hero: 'assets/hero.jpg' },
   hours: { mon: [['09:00', '18:00']] },
   resources: [{ key: 'bay-1', name: 'Бокс', type: 'detail_bay' }],
   services: [{ key: 'wash', name: 'Мойка', durationMin: 60, price: 1000, resourceTypes: ['detail_bay'] }],

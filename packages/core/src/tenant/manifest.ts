@@ -1,4 +1,4 @@
-import { isThemePresetId, resolveTheme } from '../theme/presets.ts'
+import { DEFAULT_THEME_PRESET, isThemePresetId, resolveTheme } from '../theme/presets.ts'
 
 /**
  * Web App Manifest for one tenant: the shared frontend build serves every studio, and each
@@ -22,7 +22,7 @@ export interface ManifestInput {
 }
 
 export function tenantThemeColors(input: Pick<ManifestInput, 'themePreset' | 'accent'>) {
-  const preset = isThemePresetId(input.themePreset) ? input.themePreset : 'graphite'
+  const preset = isThemePresetId(input.themePreset) ? input.themePreset : DEFAULT_THEME_PRESET
   const t = resolveTheme(preset, input.accent ?? null)
   return { background: t.bg, theme: t.bg, scheme: t.scheme }
 }

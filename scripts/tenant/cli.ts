@@ -16,7 +16,9 @@ import { businessSchema } from '@dp/core'
 import { z } from 'zod'
 import { crossCheck, loadTenant, tenantSlugs, TENANTS_DIR, type LoadedTenant, type Problem } from './lib/load.ts'
 import { publishTenant } from './lib/publish.ts'
+import { writeShells } from './lib/shells.ts'
 import { loadEnv } from './lib/supabase.ts'
+import { verifyTenants, type CheckLevel } from './lib/verify.ts'
 
 const [command, ...rest] = process.argv.slice(2)
 const flags = new Map<string, string | true>()
@@ -125,6 +127,31 @@ async function cmdPublish() {
   }
 }
 
+async function cmdVerify() {
+  const env = loadEnv()
+  const slugs = flags.has('all') || positional.length === 0 ? ('all' as const) : positional
+  const local = new Map<string, LoadedTenant>()
+  for (const slug of tenantSlugs()) local.set(slug, await loadTenant(slug))
+  const appUrl = flag('app-url')?.replace(/\/$/, '') ?? null
+  const results = await verifyTenants(env, slugs, local, { appUrl })
+  const mark: Record<CheckLevel, string> = { pass: '✓', fail: '✗', warn: '!', skip: '–' }
+  const totals: Record<CheckLevel, number> = { pass: 0, fail: 0, warn: 0, skip: 0 }
+  for (const r of results) {
+    console.log(`\n${r.slug}`)
+    for (const c of r.checks) {
+      totals[c.level]++
+      console.log(`  ${mark[c.level]} ${c.name}${c.detail ? ` — ${c.detail}` : ''}`)
+    }
+  }
+  console.log(`\n${totals.pass} passed, ${totals.fail} failed, ${totals.warn} warnings, ${totals.skip} skipped`)
+  if (totals.fail > 0) process.exitCode = 1
+}
+
+async function cmdShells() {
+  const dist = flag('dist') ?? join(import.meta.dirname, '../../apps/web/dist')
+  await writeShells(loadEnv(), dist, (l) => console.log(l))
+}
+
 /** Writes tenants/business.schema.json (editor autocompletion; Zod remains the authority). */
 async function cmdSchema() {
   const json = z.toJSONSchema(businessSchema, { io: 'input', unrepresentable: 'any' })
@@ -136,6 +163,8 @@ const commands: Record<string, () => Promise<void>> = {
   new: cmdNew,
   validate: cmdValidate,
   publish: cmdPublish,
+  verify: cmdVerify,
+  shells: cmdShells,
   schema: cmdSchema,
 }
 

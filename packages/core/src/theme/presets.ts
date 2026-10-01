@@ -42,8 +42,10 @@ export interface ThemeTokens {
   shadow: string
 }
 
-export const THEME_PRESET_IDS = ['soft-white', 'graphite', 'burgundy', 'cobalt', 'forest', 'amber', 'plum'] as const
+// Seven muted presets named by their base color; labels for people live with the tokens.
+export const THEME_PRESET_IDS = ['white', 'black', 'red', 'blue', 'green', 'yellow', 'purple'] as const
 export type ThemePresetId = (typeof THEME_PRESET_IDS)[number]
+export const DEFAULT_THEME_PRESET: ThemePresetId = 'black'
 
 export interface ThemePreset {
   id: ThemePresetId
@@ -104,7 +106,7 @@ export function buildTokens(base: Base, accentOverride?: string | null): ThemeTo
 }
 
 const bases: Record<ThemePresetId, { label: string; family: ThemePreset['family']; base: Base }> = {
-  'soft-white': {
+  white: {
     label: 'Светлая',
     family: 'white',
     base: {
@@ -122,7 +124,7 @@ const bases: Record<ThemePresetId, { label: string; family: ThemePreset['family'
       accent: '#2A2D33',
     },
   },
-  graphite: {
+  black: {
     label: 'Графит',
     family: 'black',
     base: {
@@ -140,7 +142,7 @@ const bases: Record<ThemePresetId, { label: string; family: ThemePreset['family'
       accent: '#C5C9D0',
     },
   },
-  burgundy: {
+  red: {
     label: 'Бордо',
     family: 'red',
     base: {
@@ -158,7 +160,7 @@ const bases: Record<ThemePresetId, { label: string; family: ThemePreset['family'
       accent: '#A63E52',
     },
   },
-  cobalt: {
+  blue: {
     label: 'Кобальт',
     family: 'blue',
     base: {
@@ -176,7 +178,7 @@ const bases: Record<ThemePresetId, { label: string; family: ThemePreset['family'
       accent: '#3A63C2',
     },
   },
-  forest: {
+  green: {
     label: 'Лес',
     family: 'green',
     base: {
@@ -194,7 +196,7 @@ const bases: Record<ThemePresetId, { label: string; family: ThemePreset['family'
       accent: '#2E7650',
     },
   },
-  amber: {
+  yellow: {
     label: 'Янтарь',
     family: 'yellow',
     base: {
@@ -212,7 +214,7 @@ const bases: Record<ThemePresetId, { label: string; family: ThemePreset['family'
       accent: '#CE9B3E',
     },
   },
-  plum: {
+  purple: {
     label: 'Слива',
     family: 'purple',
     base: {

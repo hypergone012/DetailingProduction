@@ -1,5 +1,5 @@
 import { Theme } from '@astryxdesign/core/theme'
-import { isThemePresetId, resolveTheme, themeToCssVars, type ThemePresetId, type ThemeTokens } from '@dp/core/theme/presets'
+import { DEFAULT_THEME_PRESET, isThemePresetId, resolveTheme, themeToCssVars, type ThemePresetId, type ThemeTokens } from '@dp/core/theme/presets'
 import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useState, type ReactNode } from 'react'
 import { storage } from '@/lib/storage'
 import { detailingTheme } from './astryx/detailing.js'
@@ -55,7 +55,7 @@ export function ThemeProvider({ storageKey, branding, children }: { storageKey: 
 
   const tokens = useMemo(() => {
     if (appearance !== 'studio') return resolveTheme(appearance)
-    const preset = isThemePresetId(branding?.themePreset) ? branding!.themePreset : 'graphite'
+    const preset = isThemePresetId(branding?.themePreset) ? branding!.themePreset : DEFAULT_THEME_PRESET
     return resolveTheme(preset as ThemePresetId, branding?.accent ?? null)
   }, [appearance, branding])
 

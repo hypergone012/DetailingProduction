@@ -20,7 +20,7 @@
     ]
   },
   "branding": {
-    "themePreset": "graphite",
+    "themePreset": "black",
     "accent": "#d6a84a",
     "logo": "assets/logo.svg",
     "icon": "assets/icon.png",

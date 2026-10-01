@@ -8,6 +8,8 @@ import { join } from 'node:path'
 export interface Env {
   url: string
   serviceKey: string
+  /** Public anon key, used where a check must look exactly like a browser request. */
+  anonKey: string | null
   appUrl: string
   local: boolean
 }
@@ -15,18 +17,20 @@ export interface Env {
 export function loadEnv(): Env {
   let url = process.env.SUPABASE_URL
   let serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  let anonKey = process.env.SUPABASE_ANON_KEY ?? null
   let local = false
   const keysFile = join(import.meta.dirname, '../../../.local/keys.json')
   if ((!url || !serviceKey) && existsSync(keysFile)) {
-    const keys = JSON.parse(readFileSync(keysFile, 'utf8')) as { url: string; serviceRoleKey: string }
+    const keys = JSON.parse(readFileSync(keysFile, 'utf8')) as { url: string; serviceRoleKey: string; anonKey: string }
     url ??= keys.url
     serviceKey ??= keys.serviceRoleKey
+    anonKey ??= keys.anonKey
     local = true
   }
   if (!url || !serviceKey) {
     throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required (or run the local stack)')
   }
-  return { url: url.replace(/\/$/, ''), serviceKey, appUrl: (process.env.APP_URL ?? 'http://127.0.0.1:5173').replace(/\/$/, ''), local }
+  return { url: url.replace(/\/$/, ''), serviceKey, anonKey, appUrl: (process.env.APP_URL ?? 'http://127.0.0.1:5173').replace(/\/$/, ''), local }
 }
 
 export class ApiError extends Error {
@@ -61,6 +65,11 @@ async function call(env: Env, path: string, init: RequestInit & { json?: unknown
     throw new ApiError(`${init.method ?? 'GET'} ${path} -> ${res.status}: ${msg}`, res.status, parsed)
   }
   return parsed
+}
+
+/** GET with the service role (REST, Storage, Functions paths under SUPABASE_URL). */
+export function get<T>(env: Env, path: string): Promise<T> {
+  return call(env, path) as Promise<T>
 }
 
 export function rpc<T>(env: Env, fn: string, args: Record<string, unknown>): Promise<T> {
