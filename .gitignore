@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.local/
+coverage/
+playwright-report/
+test-results/
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store
+supabase/functions/_vendor/
+supabase/.temp/
+.wrangler/
+.tenant-build/
