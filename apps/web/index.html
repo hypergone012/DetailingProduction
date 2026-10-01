@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ru" data-scheme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <!--dp:head-->
+    <title>Запись в студию</title>
+    <meta name="theme-color" content="#0E0F11" />
+    <meta name="color-scheme" content="dark light" />
+    <!--/dp:head-->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="format-detection" content="telephone=no" />
+    <style>
+      /* First paint before CSS/JS: never flash white on dark studios. */
+      html { background: #0e0f11; }
+      html[data-scheme='light'] { background: #f2f0eb; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>Для записи включите JavaScript.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

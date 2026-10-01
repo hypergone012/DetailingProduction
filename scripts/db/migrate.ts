@@ -31,9 +31,22 @@ export async function migrate(databaseUrl: string, log: (m: string) => void = ()
         statements text[],
         name text
       );`)
-    const applied = new Set(
-      (await sql<{ version: string }[]>`select version from supabase_migrations.schema_migrations`).map((r) => r.version),
+    const applied = new Map(
+      (await sql<{ version: string; statements: string[] | null }[]>`select version, statements from supabase_migrations.schema_migrations`).map(
+        (r) => [r.version, r.statements?.join('') ?? null],
+      ),
     )
+    // An applied migration must never change: the database would silently keep the old code.
+    const drifted = listMigrations().filter((m) => {
+      const stored = applied.get(m.version)
+      return stored != null && stored !== readFileSync(m.path, 'utf8')
+    })
+    if (drifted.length > 0) {
+      throw new Error(
+        `migration(s) edited after being applied to this database: ${drifted.map((m) => `${m.version}_${m.name}`).join(', ')}.\n` +
+          'Add a new migration instead. For a disposable local database: pnpm stack reset && pnpm db:migrate',
+      )
+    }
     let count = 0
     for (const m of listMigrations()) {
       if (applied.has(m.version)) continue

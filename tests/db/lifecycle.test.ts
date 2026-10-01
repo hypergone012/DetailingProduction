@@ -105,6 +105,32 @@ describe('reschedule', () => {
     await expectCode(reschedule(t, b.token, await at(t.timezone, day, '13:00'), key, 'different'), 'IDEMPOTENCY_CONFLICT')
   })
 
+  it('reschedule options use the booking snapshot, not the current service settings', async () => {
+    const t = await createTenant()
+    const day = await localDay(t.timezone, 3)
+    const mine = await clientBook(t, { startsAt: await at(t.timezone, day, '10:00') })
+    await clientBook(t, { startsAt: await at(t.timezone, day, '19:00') })
+    // The studio makes the service longer and pricier after the booking was made.
+    await sql`update public.services set duration_min = 180, price_cents = 900000 where id = ${t.services.wash!}`
+    const options = await asService(async (tx) => {
+      const [r] = await tx`select public.api_public_reschedule_availability(${t.slug}, ${sha256(mine.token)}, ${null}, ${null}, ${day}::date, ${1}) as r`
+      return r!.r as { work_minutes: number; price_cents: number; slots: { local_time: string }[] }
+    })
+    expect(options.work_minutes).toBe(60)
+    expect(options.price_cents).toBe(mine.booking.price_cents)
+    const times = options.slots.map((s) => s.local_time)
+    expect(times).toContain('17:00') // 17:00-18:00 + 30 min buffer fits before the 19:00 booking
+    expect(times).toContain('10:00') // its own interval does not block it
+    expect((await availability(t, day)).slots.map((s) => s.local_time)).not.toContain('17:00') // 180 min would not fit
+    const moved = await reschedule(t, mine.token, await at(t.timezone, day, '17:00'))
+    expect(moved.booking.local_start).toBe(`${day}T17:00`)
+    // A foreign token sees nothing.
+    await expectCode(
+      asService((tx) => tx`select public.api_public_reschedule_availability(${t.slug}, ${sha256('not-a-token')}, ${null}, ${null}, ${day}::date, ${1})`),
+      'BOOKING_NOT_FOUND',
+    )
+  })
+
   it('owner can move a booking to another lane; the client cannot after the cutoff', async () => {
     const t = await createTenant({
       resources: [

@@ -34,6 +34,25 @@ begin
 end;
 $$;
 
+-- Free times for moving an existing booking, per resource count (owner rules: no notice).
+create or replace function public.owner_reschedule_availability(p_booking uuid, p_from_day date, p_days int)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_tenant uuid := private.booking_tenant(p_booking);
+begin
+  perform private.require_role(v_tenant, 'staff');
+  return jsonb_build_object('slots', coalesce((
+    select jsonb_agg(jsonb_build_object('starts_at', a.starts_at, 'ends_at', a.ends_at, 'local_day', a.local_day,
+                                        'local_time', a.local_time, 'free_resources', a.free_resources) order by a.starts_at)
+    from private.availability(v_tenant, private.plan_of_booking(p_booking), p_from_day, p_days, 'owner', p_booking) a), '[]'));
+end;
+$$;
+
 -- payload: {customer: {id} | {name, phone, email}, vehicle: {id} | {make, model, body_type, ...} | null,
 --           service_id, addon_ids[], starts_at, resource_id?, allow_outside_hours?, status?, note?, internal_note?}
 create or replace function public.owner_create_booking(p_tenant uuid, p_payload jsonb)

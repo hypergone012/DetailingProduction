@@ -1,0 +1,102 @@
+import { lazy, Suspense, useEffect } from 'react'
+import { Navigate, Route, Routes } from 'react-router'
+import { Skeleton } from '@/components/ui/skeleton'
+import { MotionProvider } from '@/motion/MotionProvider'
+import { TenantHead } from '@/tenant/TenantHead'
+import { useTenant } from '@/tenant/TenantProvider'
+import { ThemeProvider } from '@/theme/ThemeProvider'
+import { BookingFlowProvider, useBookingFlow } from './booking/flow'
+import { HomeScreen } from './home/HomeScreen'
+import { BottomNav } from './layout/BottomNav'
+import { ScreenTransition } from './layout/ScreenTransition'
+
+// Home renders from the first chunk; everything else (and the sheets) loads on demand and is
+// prefetched while the browser is idle, so navigation still feels instant.
+const load = {
+  services: () => import('./services/ServicesScreen'),
+  serviceDetail: () => import('./services/ServiceDetailScreen'),
+  garage: () => import('./garage/GarageScreen'),
+  vehicle: () => import('./garage/VehicleDetailScreen'),
+  history: () => import('./history/HistoryScreen'),
+  booking: () => import('./history/BookingDetailScreen'),
+  token: () => import('./history/TokenLanding'),
+  profile: () => import('./profile/ProfileScreen'),
+  sheets: () => import('./booking/BookingSheets'),
+  update: () => import('./layout/UpdatePrompt'),
+}
+const ServicesScreen = lazy(() => load.services().then((m) => ({ default: m.ServicesScreen })))
+const ServiceDetailScreen = lazy(() => load.serviceDetail().then((m) => ({ default: m.ServiceDetailScreen })))
+const GarageScreen = lazy(() => load.garage().then((m) => ({ default: m.GarageScreen })))
+const VehicleDetailScreen = lazy(() => load.vehicle().then((m) => ({ default: m.VehicleDetailScreen })))
+const HistoryScreen = lazy(() => load.history().then((m) => ({ default: m.HistoryScreen })))
+const BookingDetailScreen = lazy(() => load.booking().then((m) => ({ default: m.BookingDetailScreen })))
+const TokenLanding = lazy(() => load.token().then((m) => ({ default: m.TokenLanding })))
+const ProfileScreen = lazy(() => load.profile().then((m) => ({ default: m.ProfileScreen })))
+const BookingSheets = lazy(() => load.sheets().then((m) => ({ default: m.BookingSheets })))
+const UpdatePrompt = lazy(() => load.update().then((m) => ({ default: m.UpdatePrompt })))
+
+function usePrefetch() {
+  useEffect(() => {
+    const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1200))
+    const handle = idle(() => Object.values(load).forEach((l) => void l().catch(() => undefined)))
+    return () => (window.cancelIdleCallback ?? window.clearTimeout)(handle as number)
+  }, [])
+}
+
+function ScreenFallback() {
+  return (
+    <div className="mx-auto grid max-w-xl gap-3 px-4 pt-[calc(var(--dp-safe-top)+64px)]" aria-busy="true">
+      <Skeleton className="h-24 rounded-2xl" />
+      <Skeleton className="h-24 rounded-2xl" />
+    </div>
+  )
+}
+
+/** Mounts the booking sheets only once a flow starts (their code is not needed before). */
+function Sheets() {
+  const flow = useBookingFlow()
+  if (!flow.step) return null
+  return (
+    <Suspense fallback={null}>
+      <BookingSheets />
+    </Suspense>
+  )
+}
+
+/** Client app of one studio: /s/:slug/* (no registration). */
+export function ClientApp() {
+  const { slug, data } = useTenant()
+  usePrefetch()
+  return (
+    <ThemeProvider storageKey={`${slug}:client`} branding={data.branding}>
+      <MotionProvider>
+        <TenantHead data={data} app="client" />
+        <BookingFlowProvider>
+          <div className="min-h-dvh pb-[calc(var(--dp-nav-height)+var(--dp-safe-bottom)+8px)]">
+            <ScreenTransition>
+              <Suspense fallback={<ScreenFallback />}>
+                <Routes>
+                  <Route index element={<HomeScreen />} />
+                  <Route path="services" element={<ServicesScreen />} />
+                  <Route path="services/:id" element={<ServiceDetailScreen />} />
+                  <Route path="garage" element={<GarageScreen />} />
+                  <Route path="garage/:id" element={<VehicleDetailScreen />} />
+                  <Route path="history" element={<HistoryScreen />} />
+                  <Route path="history/:id" element={<BookingDetailScreen />} />
+                  <Route path="b/:id" element={<TokenLanding />} />
+                  <Route path="profile" element={<ProfileScreen />} />
+                  <Route path="*" element={<Navigate to={`/s/${slug}`} replace />} />
+                </Routes>
+              </Suspense>
+            </ScreenTransition>
+          </div>
+          <BottomNav />
+          <Sheets />
+          <Suspense fallback={null}>
+            <UpdatePrompt />
+          </Suspense>
+        </BookingFlowProvider>
+      </MotionProvider>
+    </ThemeProvider>
+  )
+}

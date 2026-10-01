@@ -21,7 +21,17 @@ declare
   v_targets jsonb;
   v_reason text;
   v_tenant_status text;
+  v_scanned int;
+  v_rounds int := 0;
 begin
+  -- Jobs that turn out to be undeliverable (demo, stale, no subscriptions) are settled here and
+  -- not returned. Keep scanning until something deliverable is found or the queue is empty, so a
+  -- batch made only of such jobs never looks like "nothing left" to the dispatcher. Every round
+  -- moves the rows it scanned out of the pending state; the round cap bounds one transaction.
+  <<scan>>
+  loop
+  v_rounds := v_rounds + 1;
+  v_scanned := 0;
   for j in
     update public.notification_jobs n
        set status = 'leased', lease_owner = p_worker, attempts = n.attempts + 1,
@@ -35,6 +45,7 @@ begin
        for update skip locked)
     returning n.*
   loop
+    v_scanned := v_scanned + 1;
     v_reason := null;
     select status into v_tenant_status from public.tenants where id = j.tenant_id;
     select * into b from public.bookings where tenant_id = j.tenant_id and id = j.booking_id;
@@ -86,6 +97,8 @@ begin
                  from public.tenants t where t.id = j.tenant_id),
       'targets', v_targets);
   end loop;
+  exit scan when jsonb_array_length(v_out) > 0 or v_scanned = 0 or v_rounds >= 20;
+  end loop scan;
   return v_out;
 end;
 $$;

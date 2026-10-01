@@ -16,7 +16,7 @@ export function fromBase64Url(value: string): Uint8Array {
   return out
 }
 
-export function toHex(bytes: Uint8Array): string {
+export function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
 }
 
@@ -28,7 +28,7 @@ export async function sha256(data: string | Uint8Array): Promise<Uint8Array> {
 }
 
 export async function sha256Hex(data: string | Uint8Array): Promise<string> {
-  return toHex(await sha256(data))
+  return bytesToHex(await sha256(data))
 }
 
 /** PostgREST encodes bytea parameters as "\x<hex>". */

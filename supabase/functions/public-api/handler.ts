@@ -236,6 +236,16 @@ async function cancel(ctx: RouteContext) {
   return json(ctx.req, data)
 }
 
+async function rescheduleOptions(ctx: RouteContext) {
+  const slug = slugOf(ctx)
+  await manageLimit(ctx, slug)
+  const from = ctx.url.searchParams.get('from') ?? ''
+  const days = Number(ctx.url.searchParams.get('days') ?? '7')
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !Number.isInteger(days) || days < 1 || days > 14) throw new HttpError('VALIDATION')
+  const data = await rpc('api_public_reschedule_availability', { p_slug: slug, ...(await clientAuth(ctx)), p_from_day: from, p_days: days })
+  return json(ctx.req, data)
+}
+
 async function calendar(ctx: RouteContext) {
   const slug = slugOf(ctx)
   await manageLimit(ctx, slug)
@@ -404,6 +414,7 @@ export const handler = router('public-api', [
   { method: 'POST', path: '/t/:slug/bookings/:id/reschedule', handle: reschedule },
   { method: 'POST', path: '/t/:slug/bookings/:id/cancel', handle: cancel },
   { method: 'GET', path: '/t/:slug/bookings/:id/calendar.ics', handle: calendar },
+  { method: 'GET', path: '/t/:slug/bookings/:id/availability', handle: rescheduleOptions },
   { method: 'GET', path: '/t/:slug/me', handle: profile },
   { method: 'POST', path: '/t/:slug/me', handle: ensureProfile },
   { method: 'PATCH', path: '/t/:slug/me', handle: updateProfile },

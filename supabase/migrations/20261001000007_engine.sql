@@ -270,6 +270,34 @@ begin
 end;
 $$;
 
+-- Plan of an EXISTING booking (its snapshot duration and buffers), used to look for a new
+-- time: a reschedule keeps the work the client booked, whatever the catalog says today.
+create or replace function private.plan_of_booking(p_booking uuid)
+returns private.service_plan
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  b public.bookings;
+  p private.service_plan;
+begin
+  select * into b from public.bookings where id = p_booking;
+  p.service_id := b.service_id;
+  p.service_name := b.service_name;
+  p.body_type := b.body_type;
+  p.work_minutes := b.work_minutes;
+  p.buffer_before_min := b.buffer_before_min;
+  p.buffer_after_min := b.buffer_after_min;
+  p.price_cents := b.price_cents;
+  p.multi_day := b.multi_day;
+  select s.resource_types into p.resource_types from public.services s where s.tenant_id = b.tenant_id and s.id = b.service_id;
+  p.requires_confirmation := false;
+  p.items := '[]';
+  return p;
+end;
+$$;
+
 -- Validates the requested start and returns the end of work. Raises on any violation.
 create or replace function private.check_start(
   p_tenant uuid, p_start timestamptz, p_work_min int, p_multi_day boolean, p_mode text,

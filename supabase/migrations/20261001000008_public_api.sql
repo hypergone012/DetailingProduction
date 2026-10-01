@@ -406,6 +406,32 @@ begin
 end;
 $$;
 
+-- Free times for moving an existing booking (snapshot duration; its own occupancy ignored).
+create or replace function public.api_public_reschedule_availability(
+  p_slug text, p_token_hash bytea, p_profile_key_hash bytea, p_booking_id uuid, p_from_day date, p_days int)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  t public.tenants;
+  v_id uuid;
+  v_plan private.service_plan;
+begin
+  t := private.public_tenant(p_slug);
+  v_id := private.client_booking_id(t.id, p_token_hash, p_profile_key_hash, p_booking_id);
+  v_plan := private.plan_of_booking(v_id);
+  return jsonb_build_object(
+    'service_id', v_plan.service_id, 'price_cents', v_plan.price_cents, 'work_minutes', v_plan.work_minutes,
+    'buffer_after_min', v_plan.buffer_after_min, 'multi_day', v_plan.multi_day, 'currency', t.currency,
+    'timezone', t.timezone, 'items', '[]'::jsonb,
+    'slots', coalesce((select jsonb_agg(jsonb_build_object('starts_at', a.starts_at, 'ends_at', a.ends_at,
+                                                            'local_day', a.local_day, 'local_time', a.local_time) order by a.starts_at)
+                       from private.availability(t.id, v_plan, p_from_day, p_days, 'client', v_id) a), '[]'));
+end;
+$$;
+
 create or replace function public.api_public_reschedule(
   p_slug text, p_idempotency_key text, p_request_hash text,
   p_token_hash bytea, p_profile_key_hash bytea, p_booking_id uuid, p_starts_at timestamptz)

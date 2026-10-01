@@ -1,0 +1,190 @@
+/*
+ * Layer order (Astryx docs, "Vite + Tailwind"): reset -> tailwind theme -> preflight ->
+ * Astryx component styles -> Astryx theme tokens -> app components -> utilities.
+ * Every color in the app comes from the --dp-* semantic tokens set at runtime by the
+ * ThemeProvider (src/theme). Astryx tokens and shadcn variables are aliases of them.
+ */
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import '@astryxdesign/core/reset.css';
+@import '@astryxdesign/core/astryx.css';
+/* Pre-built app theme (pnpm --filter @dp/web theme:build); its tokens alias the --dp-* tokens. */
+@import '../theme/astryx/detailing.css';
+@import 'shadcn/tailwind.css';
+@import 'tailwindcss/utilities.css' layer(utilities);
+@import '@fontsource-variable/onest/index.css';
+
+@custom-variant dark (&:where([data-scheme='dark'], [data-scheme='dark'] *));
+
+@theme inline {
+  --font-sans: 'Onest Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Onest Variable', ui-sans-serif, system-ui, sans-serif;
+
+  --color-bg: var(--dp-bg);
+  --color-bg-elevated: var(--dp-bg-elevated);
+  --color-surface: var(--dp-surface);
+  --color-surface-2: var(--dp-surface-2);
+  --color-sunken: var(--dp-sunken);
+  --color-scrim: var(--dp-scrim);
+  --color-fg: var(--dp-text);
+  --color-fg-muted: var(--dp-text-muted);
+  --color-fg-subtle: var(--dp-text-subtle);
+  --color-fg-inverse: var(--dp-text-inverse);
+  --color-line: var(--dp-border);
+  --color-line-strong: var(--dp-border-strong);
+  --color-accent: var(--dp-accent);
+  --color-accent-hover: var(--dp-accent-hover);
+  --color-accent-fg: var(--dp-accent-contrast);
+  --color-accent-text: var(--dp-accent-text);
+  --color-accent-subtle: var(--dp-accent-subtle);
+  --color-focus: var(--dp-focus);
+  --color-success: var(--dp-success);
+  --color-success-subtle: var(--dp-success-subtle);
+  --color-warning: var(--dp-warning);
+  --color-warning-subtle: var(--dp-warning-subtle);
+  --color-danger: var(--dp-danger);
+  --color-danger-subtle: var(--dp-danger-subtle);
+  --color-info: var(--dp-info);
+  --color-info-subtle: var(--dp-info-subtle);
+
+  /* shadcn variable names, aliased to the same tokens */
+  --color-background: var(--dp-bg);
+  --color-foreground: var(--dp-text);
+  --color-card: var(--dp-surface);
+  --color-card-foreground: var(--dp-text);
+  --color-popover: var(--dp-surface-2);
+  --color-popover-foreground: var(--dp-text);
+  --color-primary: var(--dp-accent);
+  --color-primary-foreground: var(--dp-accent-contrast);
+  --color-secondary: var(--dp-surface-2);
+  --color-secondary-foreground: var(--dp-text);
+  --color-muted: var(--dp-sunken);
+  --color-muted-foreground: var(--dp-text-muted);
+  --color-destructive: var(--dp-danger);
+  --color-border: var(--dp-border);
+  --color-input: var(--dp-border-strong);
+  --color-ring: var(--dp-focus);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  --shadow-card: 0 1px 0 0 color-mix(in oklab, var(--dp-text) 4%, transparent) inset, 0 8px 24px -16px var(--dp-shadow);
+  --shadow-pop: 0 18px 48px -18px var(--dp-shadow);
+
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-spring: cubic-bezier(0.34, 1.36, 0.64, 1);
+}
+
+/* Astryx tokens follow the same semantic tokens (see src/theme/astryx-theme.ts too). */
+:root {
+  --dp-safe-top: env(safe-area-inset-top, 0px);
+  --dp-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --dp-nav-height: 64px;
+  --font-family-body: 'Onest Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-family-heading: 'Onest Variable', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    background: var(--dp-bg);
+    color: var(--dp-text);
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background: var(--dp-bg);
+    color: var(--dp-text);
+    font-family: var(--font-sans);
+    font-feature-settings: 'ss01', 'tnum' 0;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+    min-height: 100dvh;
+  }
+  :focus-visible {
+    outline: 2px solid var(--dp-focus);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--dp-accent-subtle);
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* Native-feeling press feedback for any tappable element. */
+  .pressable {
+    transition: transform 140ms var(--ease-out-quart), background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+  }
+  .pressable:active:not(:disabled) {
+    transform: scale(0.975);
+  }
+  .skeleton {
+    background: linear-gradient(90deg, var(--dp-sunken) 0%, var(--dp-surface-2) 50%, var(--dp-sunken) 100%);
+    background-size: 200% 100%;
+    animation: dp-shimmer 1.4s ease-in-out infinite;
+  }
+  .safe-bottom {
+    padding-bottom: calc(var(--dp-safe-bottom) + 12px);
+  }
+  .safe-top {
+    padding-top: var(--dp-safe-top);
+  }
+  .hairline {
+    border-color: var(--dp-border);
+  }
+  .scroll-x {
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scroll-x::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes dp-pop {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.dp-pop-in {
+  animation: dp-pop 160ms var(--ease-out-quart);
+}
+
+@keyframes dp-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .skeleton {
+    animation: none;
+  }
+}
+
+html[data-motion='reduce'] *,
+html[data-motion='reduce'] *::before,
+html[data-motion='reduce'] *::after {
+  animation-duration: 0.001ms !important;
+  transition-duration: 0.001ms !important;
+}

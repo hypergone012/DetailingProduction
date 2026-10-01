@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { BODY_TYPES, type BodyType } from '../tenant/schema.ts'
+import { BODY_TYPES, type BodyType } from '../tenant/constants.ts'
 
 /**
  * Client API contracts (public-api Edge Function). Requests are validated with these

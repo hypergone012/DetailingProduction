@@ -9,21 +9,9 @@ import { THEME_PRESET_IDS, THEME_PRESETS, resolveTheme } from '../theme/presets.
  * never read by the running app.
  */
 
-export const BODY_TYPES = ['hatchback', 'sedan', 'coupe', 'crossover', 'suv', 'large_suv', 'minivan', 'pickup'] as const
-export type BodyType = (typeof BODY_TYPES)[number]
+import { BODY_TYPES, WEEKDAYS } from './constants.ts'
 
-export const BODY_TYPE_LABELS: Record<BodyType, string> = {
-  hatchback: 'Хэтчбек',
-  sedan: 'Седан / универсал',
-  coupe: 'Купе / кабриолет',
-  crossover: 'Кроссовер',
-  suv: 'Внедорожник',
-  large_suv: 'Большой внедорожник',
-  minivan: 'Минивэн / фургон',
-  pickup: 'Пикап',
-}
-
-export const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
+export { BODY_TYPE_LABELS, BODY_TYPES, WEEKDAYS, type BodyType } from './constants.ts'
 
 const key = z.string().regex(/^[a-z0-9][a-z0-9-]{0,63}$/, 'ключ: латиница в нижнем регистре, цифры и дефис')
 const time = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$|^24:00$/, 'время в формате HH:MM')

@@ -154,6 +154,25 @@ describe('outbox', () => {
     expect(s!.disabled_at).not.toBeNull()
   })
 
+  it('a batch made only of undeliverable jobs never hides deliverable ones behind it', async () => {
+    const t = await createTenant()
+    const day = await localDay(t.timezone, 5)
+    // No subscriptions for these: their jobs are settled as no_subscriptions inside the lease call.
+    for (const time of ['09:00', '10:30', '12:00', '13:30', '15:00']) await clientBook(t, { startsAt: await at(t.timezone, day, time) })
+    const target = await clientBook(t, { startsAt: await at(t.timezone, day, '17:00') })
+    await subscribeClient(t, target.profileKey)
+    const seen: Leased[] = []
+    // The dispatcher stops on the first empty batch, so an empty batch must mean "queue drained".
+    for (let i = 0; i < 100; i++) {
+      const batch = await lease('narrow', 2)
+      seen.push(...batch)
+      if (batch.length === 0 || seen.some((l) => l.booking.id === target.booking.id)) break
+    }
+    const mine = seen.find((l) => l.booking.id === target.booking.id && l.job.audience === 'client')
+    expect(mine).toBeDefined()
+    for (const l of seen) await report(l.job.id, 'narrow', l.targets.map((x) => ({ subscription_id: x.subscription_id, status: 'sent' })))
+  })
+
   it('gives up after max attempts', async () => {
     const t = await createTenant()
     const day = await localDay(t.timezone, 3)
