@@ -28,9 +28,11 @@
     "tenant:verify": "tsx scripts/tenant/cli.ts verify",
     "tenant:shells": "tsx scripts/tenant/cli.ts shells",
     "tenant:art": "tsx scripts/tenant/demo-art.ts",
-    "security:scan-bundle": "tsx scripts/security/scan-bundle.ts"
+    "security:scan-bundle": "tsx scripts/security/scan-bundle.ts",
+    "tenant:schema": "tsx scripts/tenant/cli.ts schema"
   },
   "devDependencies": {
+    "@dp/core": "workspace:*",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.56.1",
     "@types/node": "26.6.3",

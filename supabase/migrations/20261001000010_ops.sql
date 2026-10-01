@@ -713,7 +713,7 @@ begin
     return;
   end if;
   insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-  values ('public-media', 'public-media', true, 10485760, array['image/webp', 'image/jpeg', 'image/png', 'image/svg+xml', 'image/avif']),
+  values ('public-media', 'public-media', true, 10485760, array['image/webp', 'image/jpeg', 'image/png', 'image/avif']),
          ('private-media', 'private-media', false, 10485760, array['image/webp', 'image/jpeg', 'image/png'])
   on conflict (id) do nothing;
 

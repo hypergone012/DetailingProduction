@@ -1,0 +1,52 @@
+{
+  "customers": [
+    {
+      "name": "Анна Зуева",
+      "phone": "+79122000001",
+      "vehicles": [{ "make": "Skoda", "model": "Kodiaq", "year": 2021, "body_type": "crossover", "color": "Серый", "nickname": "Семейная" }],
+      "visits": [
+        { "service_key": "complex-wash", "days_from_now": -50, "local_time": "10:00", "status": "completed", "paid_method": "card" },
+        { "service_key": "cabin-deep", "days_from_now": -30, "local_time": "09:00", "status": "completed", "paid_method": "card", "client_note": "Детские кресла почистили, следующую химчистку рекомендуем через полгода." },
+        { "service_key": "eco-wash", "days_from_now": 2, "local_time": "18:30", "status": "confirmed" }
+      ]
+    },
+    {
+      "name": "Павел Крылов",
+      "phone": "+79122000002",
+      "vehicles": [{ "make": "Hyundai", "model": "Solaris", "year": 2019, "body_type": "sedan", "color": "Белый" }],
+      "visits": [
+        { "service_key": "complex-wash", "days_from_now": -40, "local_time": "12:00", "status": "completed", "paid_method": "cash" },
+        { "service_key": "cabin-deep", "days_from_now": -20, "local_time": "09:00", "status": "completed", "paid_method": "card" }
+      ]
+    },
+    {
+      "name": "Ирина Белова",
+      "phone": "+79122000003",
+      "vehicles": [{ "make": "Toyota", "model": "RAV4", "year": 2022, "body_type": "crossover", "color": "Зелёный" }],
+      "visits": [
+        { "service_key": "complex-wash", "days_from_now": -35, "local_time": "15:00", "status": "completed", "paid_method": "card" },
+        { "service_key": "cabin-deep", "days_from_now": -10, "local_time": "09:00", "status": "completed", "paid_method": "transfer" },
+        { "service_key": "wax-protect", "days_from_now": 5, "local_time": "11:00", "status": "confirmed" }
+      ]
+    },
+    {
+      "name": "Максим Титов",
+      "phone": "+79122000004",
+      "vehicles": [{ "make": "Volkswagen", "model": "Multivan", "year": 2018, "body_type": "minivan", "color": "Синий" }],
+      "visits": [
+        { "service_key": "eco-wash", "days_from_now": -28, "local_time": "08:30", "status": "completed", "paid_method": "card" },
+        { "service_key": "complex-wash", "days_from_now": -8, "local_time": "17:00", "status": "completed", "paid_method": "card" },
+        { "service_key": "winter-prep", "days_from_now": 7, "local_time": "10:00", "status": "confirmed" }
+      ]
+    },
+    {
+      "name": "Елена Соколова",
+      "phone": "+79122000005",
+      "vehicles": [{ "make": "Renault", "model": "Duster", "year": 2020, "body_type": "crossover", "color": "Оранжевый" }],
+      "visits": [
+        { "service_key": "eco-wash", "days_from_now": -4, "local_time": "19:00", "status": "completed", "paid_method": "card" },
+        { "service_key": "cabin-express", "days_from_now": 1, "local_time": "12:00", "status": "confirmed" }
+      ]
+    }
+  ]
+}

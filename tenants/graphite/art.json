@@ -1,0 +1,31 @@
+{
+  "palette": {
+    "bg": "#0c0d0f",
+    "bg2": "#1b1d21",
+    "paint": "#2c3036",
+    "paintHi": "#8d949f",
+    "glass": "#3a4250",
+    "light": "#fff2dc",
+    "accent": "#d6a84a",
+    "floor": "#060607",
+    "leather": "#3b2a22",
+    "foam": "#f2f2f0"
+  },
+  "mark": "facet",
+  "images": [
+    { "file": "logo.svg", "scene": "logo", "w": 256, "h": 256 },
+    { "file": "icon.png", "scene": "icon" },
+    { "file": "hero.jpg", "scene": "studio-side", "w": 1800, "h": 1100 },
+    { "file": "gallery/paint.jpg", "scene": "panel-reflection" },
+    { "file": "gallery/wheel.jpg", "scene": "wheel" },
+    { "file": "gallery/beading.jpg", "scene": "beading" },
+    { "file": "gallery/interior.jpg", "scene": "interior" },
+    { "file": "services/wash.jpg", "scene": "foam" },
+    { "file": "services/interior.jpg", "scene": "interior" },
+    { "file": "services/leather.jpg", "scene": "interior" },
+    { "file": "services/paint.jpg", "scene": "panel-reflection" },
+    { "file": "services/ceramic.jpg", "scene": "beading" },
+    { "file": "services/ppf.jpg", "scene": "ppf-edge" },
+    { "file": "services/presale.jpg", "scene": "studio-side" }
+  ]
+}

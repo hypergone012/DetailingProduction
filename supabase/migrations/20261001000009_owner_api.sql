@@ -746,7 +746,9 @@ begin
   select * into m from public.media where id = p_media;
   perform private.require_role(m.tenant_id, 'manager');
   delete from public.media where id = p_media;
-  return jsonb_build_object('bucket', m.bucket, 'path', m.path);
+  -- The caller removes the stored object only when no other row still uses it.
+  return jsonb_build_object('bucket', m.bucket, 'path', m.path,
+    'delete_object', not exists (select 1 from public.media x where x.bucket = m.bucket and x.path = m.path));
 end;
 $$;
 

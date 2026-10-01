@@ -1,0 +1,85 @@
+{
+  "customers": [
+    {
+      "name": "Алексей Воронов",
+      "phone": "+79161000001",
+      "vehicles": [{ "make": "BMW", "model": "M5", "generation": "F90", "year": 2021, "body_type": "sedan", "color": "Тёмно-серый металлик", "nickname": "Пятёрка" }],
+      "visits": [
+        { "service_key": "detailing-wash", "days_from_now": -120, "local_time": "11:00", "status": "completed", "paid_method": "card" },
+        { "service_key": "ceramic-3-layers", "days_from_now": -95, "local_time": "10:00", "status": "completed", "paid_method": "transfer", "client_note": "Через 14 дней — первая мойка, приезжайте к нам." },
+        { "service_key": "detailing-wash", "days_from_now": -40, "local_time": "12:00", "status": "completed", "paid_method": "card" },
+        { "service_key": "detailing-wash", "days_from_now": 4, "local_time": "12:00", "status": "confirmed" }
+      ]
+    },
+    {
+      "name": "Марина Кольцова",
+      "phone": "+79161000002",
+      "vehicles": [
+        { "make": "Porsche", "model": "Cayenne", "year": 2020, "body_type": "suv", "color": "Белый", "nickname": "Каен" },
+        { "make": "Mini", "model": "Cooper S", "year": 2018, "body_type": "hatchback", "color": "Зелёный" }
+      ],
+      "visits": [
+        { "service_key": "detailing-wash", "days_from_now": -80, "local_time": "13:00", "status": "completed", "paid_method": "card" },
+        { "service_key": "ceramic-3-layers", "days_from_now": -60, "local_time": "10:00", "status": "completed", "paid_method": "card" },
+        { "service_key": "interior-deep-clean", "days_from_now": -25, "local_time": "10:00", "status": "completed", "paid_method": "cash", "vehicle_index": 1 },
+        { "service_key": "leather-care", "days_from_now": 6, "local_time": "11:00", "status": "confirmed" }
+      ]
+    },
+    {
+      "name": "Дмитрий Лебедев",
+      "phone": "+79161000003",
+      "vehicles": [{ "make": "Mercedes-Benz", "model": "E 300", "year": 2022, "body_type": "sedan", "color": "Чёрный обсидиан" }],
+      "visits": [
+        { "service_key": "detailing-wash", "days_from_now": -70, "local_time": "15:00", "status": "completed", "paid_method": "card" },
+        { "service_key": "ceramic-3-layers", "days_from_now": -50, "local_time": "10:00", "status": "completed", "paid_method": "transfer" },
+        { "service_key": "detailing-wash", "days_from_now": -9, "local_time": "16:00", "status": "no_show" }
+      ]
+    },
+    {
+      "name": "Ольга Сафронова",
+      "phone": "+79161000004",
+      "vehicles": [{ "make": "Volvo", "model": "XC90", "year": 2019, "body_type": "large_suv", "color": "Серебристый" }],
+      "visits": [
+        { "service_key": "detailing-wash", "days_from_now": -45, "local_time": "10:00", "status": "completed", "paid_method": "card" },
+        { "service_key": "ppf-front", "days_from_now": -30, "local_time": "10:00", "status": "completed", "paid_method": "transfer" },
+        { "service_key": "detailing-wash", "days_from_now": -12, "local_time": "17:00", "status": "cancelled" }
+      ]
+    },
+    {
+      "name": "Игорь Мельников",
+      "phone": "+79161000005",
+      "vehicles": [{ "make": "Toyota", "model": "Land Cruiser 300", "year": 2023, "body_type": "large_suv", "color": "Белый перламутр" }],
+      "visits": [
+        { "service_key": "pre-sale", "days_from_now": -14, "local_time": "10:00", "status": "completed", "paid_method": "cash" },
+        { "service_key": "detailing-wash", "days_from_now": 2, "local_time": "14:00", "status": "confirmed" }
+      ]
+    },
+    {
+      "name": "Екатерина Орлова",
+      "phone": "+79161000006",
+      "vehicles": [{ "make": "Audi", "model": "A6", "year": 2021, "body_type": "sedan", "color": "Синий навара" }],
+      "visits": [
+        { "service_key": "paint-correction-2step", "days_from_now": -20, "local_time": "10:00", "status": "completed", "paid_method": "card" },
+        { "service_key": "ceramic-3-layers", "days_from_now": 9, "local_time": "10:00", "status": "confirmed" }
+      ]
+    },
+    {
+      "name": "Сергей Дьяков",
+      "phone": "+79161000007",
+      "vehicles": [{ "make": "Kia", "model": "K5", "year": 2022, "body_type": "sedan", "color": "Красный" }],
+      "visits": [
+        { "service_key": "detailing-wash", "days_from_now": -6, "local_time": "18:00", "status": "completed", "paid_method": "card" },
+        { "service_key": "interior-deep-clean", "days_from_now": 3, "local_time": "10:00", "status": "confirmed" }
+      ]
+    },
+    {
+      "name": "Наталья Гусева",
+      "phone": "+79161000008",
+      "vehicles": [{ "make": "Lexus", "model": "RX 350", "year": 2020, "body_type": "crossover", "color": "Графит" }],
+      "visits": [
+        { "service_key": "detailing-wash", "days_from_now": -3, "local_time": "11:00", "status": "completed" },
+        { "service_key": "detailing-wash", "days_from_now": 1, "local_time": "16:00", "status": "confirmed" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "imports": {
+    "zod": "npm:zod@4.6.5",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.117.2",
+    "libphonenumber-js/min": "npm:libphonenumber-js@1.13.14/min",
+    "jose": "npm:jose@6.2.12"
+  },
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "lib": ["deno.ns", "deno.window", "dom"]
+  },
+  "lock": false
+}

@@ -1,0 +1,11 @@
+{
+  "palette": { "bg": "#121315", "bg2": "#1f2125", "paint": "#3a3f47", "paintHi": "#9aa1ab", "glass": "#2f3640", "light": "#f4f4f2", "accent": "#c5c9d0", "floor": "#08090a", "leather": "#3d3530", "foam": "#f5f5f5" },
+  "mark": "ring",
+  "images": [
+    { "file": "logo.svg", "scene": "logo", "w": 256, "h": 256 },
+    { "file": "icon.png", "scene": "icon" },
+    { "file": "hero.jpg", "scene": "studio-side", "w": 1800, "h": 1100 },
+    { "file": "gallery/paint.jpg", "scene": "panel-reflection" },
+    { "file": "services/wash.jpg", "scene": "foam" }
+  ]
+}

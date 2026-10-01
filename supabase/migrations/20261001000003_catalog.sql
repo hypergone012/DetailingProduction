@@ -143,7 +143,6 @@ create table public.media (
   config_sig text,
   created_at timestamptz not null default now(),
   unique (tenant_id, id),
-  unique (bucket, path),
   -- public assets must not reference private buckets and vice versa
   check ((kind in ('vehicle', 'before', 'after')) = (bucket = 'private-media')),
   foreign key (tenant_id, service_id) references public.services (tenant_id, id) on delete set null (service_id)
@@ -152,6 +151,8 @@ create table public.media (
 alter table public.media add constraint media_path_tenant check (split_part(path, '/', 1) = tenant_id::text);
 create unique index media_config_key_idx on public.media (tenant_id, key) where key is not null;
 create index media_service_idx on public.media (tenant_id, service_id) where service_id is not null;
+-- One stored object may back several rows (the same photo used for two services).
+create index media_path_idx on public.media (bucket, path);
 
 alter table public.resources enable row level security;
 alter table public.services enable row level security;

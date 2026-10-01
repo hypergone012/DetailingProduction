@@ -63,3 +63,13 @@ react 19.3 · vite 8.3 · react-router 8.4 · @tanstack/react-query 5.104 · zod
 
 Проверки: `pnpm test:db` — **64 passed** (booking-engine 20, lifecycle 15, security 15, money-stats 3, outbox 5, publish 6).
 Решение: availability и размещение — в SQL (а не в TS), чтобы авторитетная проверка шла в той же транзакции, что и запись в журнал занятости.
+
+### Этап 3 — готово (кроме `verify`/`shells`, которым нужны этапы 4–5)
+- `packages/core`: Zod-схема `business.json` (строгая, с перекрёстными проверками: типы ресурсов, рекомендации, пересечения часов, дубли ключей, «кислотные» акценты, требования к live), нормализация в копейки/ISO-дни, стабильные ключи медиа, canonical JSON для хеша.
+- 7 тем-пресетов (`soft-white`, `graphite`, `burgundy`, `cobalt`, `forest`, `amber`, `plum`) на семантических токенах; бренд-акцент тенанта подменяет только акцентные токены и автоматически подбирает контрастные `accent-contrast`/`accent-text`.
+- `scripts/tenant`: `tenant:new` (из `_template`, новый uuid, статус draft), `tenant:validate` (схема + ассеты через sharp + демо-сид + уникальность id/slug), `tenant:publish` (адаптивные WebP-варианты, иконки any/maskable/apple/favicon, контент-адресуемая загрузка в Storage, владельцы через GoTrue Admin API, `api_admin_publish_tenant`, демо-сид), `tenant:schema`.
+- Тенанты: `graphite` (тёмный премиум, Москва, 4 ресурса, 7 услуг) и `verde` (светлая тема + лесной акцент, Екатеринбург UTC+5, шаг 15 мин, 3 ресурса других типов, 6 услуг).
+- Демо-иллюстрации генерируются `pnpm tenant:art` из `tenants/<slug>/art.json` (реальные фото недоступны в сети окружения) — помечены `demoArtwork: true`, live без замены запрещён.
+
+Проверки: `pnpm test` — **37 passed** (контраст WCAG всех тем, схема, нормализация); локальная публикация обоих тенантов прошла, повторная публикация — `no changes (idempotent republish)`, 0 загрузок; `pnpm test:db` (publish.test) — republish не трогает runtime-данные, публикация B не меняет A побайтно.
+Решение: SVG не хранится в Storage (риск XSS на origin хранилища) — логотип растеризуется в PNG.

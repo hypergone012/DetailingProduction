@@ -46,6 +46,12 @@ wait_http() {
   echo "$name failed to start, see $log" >&2; tail -20 "$log" >&2; exit 1
 }
 
+ensure_keys() {
+  [ -f "$LOCAL/keys.json" ] || (cd "$ROOT" && npx tsx scripts/local/keys.ts >/dev/null)
+}
+
+json_key() { node -e "process.stdout.write(require('$LOCAL/keys.json')['$1'])"; }
+
 pid_alive() { [ -f "$1" ] && kill -0 "$(cat "$1")" 2>/dev/null; }
 
 build_auth() {
@@ -126,7 +132,7 @@ storage_env() {
   export IMAGE_TRANSFORMATION_ENABLED=false RATE_LIMITER_ENABLED=false PG_QUEUE_ENABLE=false
   export OTEL_METRICS_ENABLED=false PROMETHEUS_METRICS_ENABLED=false LOGFLARE_ENABLED=false
   export LOG_LEVEL=warn NODE_ENV=production
-  export ANON_KEY="${DP_ANON_KEY:-}" SERVICE_KEY="${DP_SERVICE_KEY:-}"
+  export ANON_KEY="$(json_key anonKey)" SERVICE_KEY="$(json_key serviceRoleKey)"
 }
 
 create_db() {
@@ -203,7 +209,7 @@ case "${1:-}" in
   init-db)
     init_pg; start_pg; create_db "$DB" ;;
   start)
-    start_pg; start_auth; start_rest; start_storage ;;
+    ensure_keys; start_pg; start_auth; start_rest; start_storage ;;
   stop)
     stop_services; as_pg "$PGBIN/pg_ctl" -D "$PGDATA" -m fast stop >/dev/null 2>&1 || true; echo stopped ;;
   restart-services)
@@ -215,7 +221,7 @@ case "${1:-}" in
     curl -fsS "http://127.0.0.1:$STORAGE_PORT/status" >/dev/null 2>&1 && echo "storage up" || echo "storage down" ;;
   reset)
     # Storage must migrate its schema before the project migrations create buckets/policies.
-    stop_services; sleep 0.3; start_pg; create_db "$DB"; start_auth; start_rest; start_storage
+    ensure_keys; stop_services; sleep 0.3; start_pg; create_db "$DB"; start_auth; start_rest; start_storage
     echo "next: pnpm db:migrate" ;;
   createdb) start_pg; create_db "${2:?db name}" ;;
   dropdb) psql_local -d postgres -c "drop database if exists \"${2:?db name}\" with (force)" ;;

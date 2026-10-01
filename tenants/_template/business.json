@@ -1,0 +1,60 @@
+{
+  "$schema": "../business.schema.json",
+  "id": "00000000-0000-4000-8000-000000000000",
+  "slug": "template",
+  "name": "Название студии",
+  "status": "draft",
+  "timezone": "Europe/Moscow",
+  "locale": "ru-RU",
+  "currency": "RUB",
+  "profile": {
+    "tagline": "Короткий слоган студии",
+    "description": "Два-три предложения о студии: что делаете лучше всего, какое оборудование, почему вам доверяют.",
+    "address": "Город, улица, дом",
+    "mapUrl": null,
+    "phone": "+70000000000",
+    "email": null,
+    "website": null,
+    "socials": []
+  },
+  "branding": {
+    "themePreset": "graphite",
+    "accent": null,
+    "logo": "assets/logo.svg",
+    "icon": "assets/icon.png",
+    "hero": "assets/hero.jpg",
+    "heroAlt": "Автомобиль в боксе студии",
+    "gallery": [{ "src": "assets/gallery/paint.jpg", "alt": "Работа студии", "caption": "" }],
+    "demoArtwork": true
+  },
+  "seo": { "title": "", "description": "" },
+  "features": { "ai": true, "garage": true, "push": true },
+  "policy": { "slotStepMin": 30, "minNoticeMin": 120, "horizonDays": 45, "cancelCutoffHours": 24, "requiresConfirmation": false, "maxActiveBookingsPerPhone": 3 },
+  "notifications": { "ownerPush": true, "clientPush": true, "reminderHoursBefore": 24 },
+  "ai": { "dailyRequestLimit": 300, "dailyTokenBudget": 300000 },
+  "hours": {
+    "mon": [["09:00", "20:00"]],
+    "tue": [["09:00", "20:00"]],
+    "wed": [["09:00", "20:00"]],
+    "thu": [["09:00", "20:00"]],
+    "fri": [["09:00", "20:00"]],
+    "sat": [["10:00", "18:00"]]
+  },
+  "exceptions": [],
+  "resources": [{ "key": "bay-1", "type": "detail_bay", "name": "Бокс 1" }],
+  "services": [
+    {
+      "key": "wash",
+      "name": "Детейлинг-мойка",
+      "category": "wash",
+      "summary": "Ручная мойка кузова, диски, сушка",
+      "description": "",
+      "durationMin": 90,
+      "bufferAfterMin": 15,
+      "price": 3000,
+      "resourceTypes": ["detail_bay"],
+      "images": [{ "src": "assets/services/wash.jpg", "alt": "Мойка" }]
+    }
+  ],
+  "owners": [{ "email": "owner@example.com", "role": "owner" }]
+}

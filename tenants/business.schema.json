@@ -1,0 +1,816 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "status": {
+      "default": "demo",
+      "type": "string",
+      "enum": [
+        "draft",
+        "demo",
+        "live"
+      ]
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "locale": {
+      "default": "ru-RU",
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$"
+    },
+    "currency": {
+      "default": "RUB",
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "profile": {
+      "type": "object",
+      "properties": {
+        "tagline": {
+          "default": "",
+          "type": "string",
+          "maxLength": 160
+        },
+        "description": {
+          "default": "",
+          "type": "string",
+          "maxLength": 4000
+        },
+        "address": {
+          "default": "",
+          "type": "string",
+          "maxLength": 300
+        },
+        "mapUrl": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uri"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "phone": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^\\+[1-9]\\d{7,14}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "email": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "email",
+              "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "website": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uri"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "socials": {
+          "default": [],
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "telegram",
+                  "whatsapp",
+                  "vk",
+                  "instagram",
+                  "youtube",
+                  "website",
+                  "other"
+                ]
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 40
+              }
+            },
+            "required": [
+              "kind",
+              "url"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "branding": {
+      "type": "object",
+      "properties": {
+        "themePreset": {
+          "type": "string",
+          "enum": [
+            "soft-white",
+            "graphite",
+            "burgundy",
+            "cobalt",
+            "forest",
+            "amber",
+            "plum"
+          ]
+        },
+        "accent": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "logo": {
+          "type": "string",
+          "pattern": "^assets\\/[A-Za-z0-9/_.-]+\\.(?:svg|png|jpe?g|webp|avif)$"
+        },
+        "icon": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^assets\\/[A-Za-z0-9/_.-]+\\.(?:svg|png|jpe?g|webp|avif)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hero": {
+          "type": "string",
+          "pattern": "^assets\\/[A-Za-z0-9/_.-]+\\.(?:svg|png|jpe?g|webp|avif)$"
+        },
+        "heroAlt": {
+          "default": "",
+          "type": "string",
+          "maxLength": 200
+        },
+        "gallery": {
+          "default": [],
+          "maxItems": 24,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "src": {
+                "type": "string",
+                "pattern": "^assets\\/[A-Za-z0-9/_.-]+\\.(?:svg|png|jpe?g|webp|avif)$"
+              },
+              "alt": {
+                "default": "",
+                "type": "string",
+                "maxLength": 200
+              },
+              "caption": {
+                "default": "",
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "src"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "demoArtwork": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "themePreset",
+        "logo",
+        "hero"
+      ],
+      "additionalProperties": false
+    },
+    "seo": {
+      "default": {
+        "title": "",
+        "description": ""
+      },
+      "type": "object",
+      "properties": {
+        "title": {
+          "default": "",
+          "type": "string",
+          "maxLength": 70
+        },
+        "description": {
+          "default": "",
+          "type": "string",
+          "maxLength": 170
+        }
+      },
+      "additionalProperties": false
+    },
+    "features": {
+      "default": {
+        "ai": true,
+        "garage": true,
+        "push": true
+      },
+      "type": "object",
+      "properties": {
+        "ai": {
+          "default": true,
+          "type": "boolean"
+        },
+        "garage": {
+          "default": true,
+          "type": "boolean"
+        },
+        "push": {
+          "default": true,
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "policy": {
+      "default": {
+        "slotStepMin": 30,
+        "minNoticeMin": 120,
+        "horizonDays": 45,
+        "cancelCutoffHours": 24,
+        "requiresConfirmation": false,
+        "maxActiveBookingsPerPhone": 3
+      },
+      "type": "object",
+      "properties": {
+        "slotStepMin": {
+          "default": 30,
+          "anyOf": [
+            {
+              "type": "number",
+              "const": 5
+            },
+            {
+              "type": "number",
+              "const": 10
+            },
+            {
+              "type": "number",
+              "const": 15
+            },
+            {
+              "type": "number",
+              "const": 20
+            },
+            {
+              "type": "number",
+              "const": 30
+            },
+            {
+              "type": "number",
+              "const": 60
+            }
+          ]
+        },
+        "minNoticeMin": {
+          "default": 120,
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10080
+        },
+        "horizonDays": {
+          "default": 45,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365
+        },
+        "cancelCutoffHours": {
+          "default": 24,
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 336
+        },
+        "requiresConfirmation": {
+          "default": false,
+          "type": "boolean"
+        },
+        "maxActiveBookingsPerPhone": {
+          "default": 3,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        }
+      },
+      "additionalProperties": false
+    },
+    "notifications": {
+      "default": {
+        "ownerPush": true,
+        "clientPush": true,
+        "reminderHoursBefore": 24
+      },
+      "type": "object",
+      "properties": {
+        "ownerPush": {
+          "default": true,
+          "type": "boolean"
+        },
+        "clientPush": {
+          "default": true,
+          "type": "boolean"
+        },
+        "reminderHoursBefore": {
+          "default": 24,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 168
+        }
+      },
+      "additionalProperties": false
+    },
+    "ai": {
+      "default": {
+        "dailyRequestLimit": 300,
+        "dailyTokenBudget": 300000
+      },
+      "type": "object",
+      "properties": {
+        "dailyRequestLimit": {
+          "default": 300,
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "dailyTokenBudget": {
+          "default": 300000,
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000000
+        }
+      },
+      "additionalProperties": false
+    },
+    "hours": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "enum": [
+          "mon",
+          "tue",
+          "wed",
+          "thu",
+          "fri",
+          "sat",
+          "sun"
+        ]
+      },
+      "additionalProperties": {
+        "maxItems": 4,
+        "type": "array",
+        "items": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "string",
+              "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$|^24:00$"
+            },
+            {
+              "type": "string",
+              "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$|^24:00$"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      }
+    },
+    "exceptions": {
+      "default": [],
+      "maxItems": 200,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "closed": {
+            "type": "boolean"
+          },
+          "opens": {
+            "type": "string",
+            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$|^24:00$"
+          },
+          "closes": {
+            "type": "string",
+            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$|^24:00$"
+          },
+          "note": {
+            "default": "",
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "date",
+          "closed"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "resources": {
+      "minItems": 1,
+      "maxItems": 50,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "type": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,39}$"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "type"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "services": {
+      "minItems": 1,
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "category": {
+            "default": "other",
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,39}$"
+          },
+          "summary": {
+            "default": "",
+            "type": "string",
+            "maxLength": 200
+          },
+          "description": {
+            "default": "",
+            "type": "string",
+            "maxLength": 4000
+          },
+          "durationMin": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 20160
+          },
+          "bufferBeforeMin": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 240
+          },
+          "bufferAfterMin": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 240
+          },
+          "price": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000000
+          },
+          "resourceTypes": {
+            "minItems": 1,
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,39}$"
+            }
+          },
+          "multiDay": {
+            "default": false,
+            "type": "boolean"
+          },
+          "requiresConfirmation": {
+            "default": false,
+            "type": "boolean"
+          },
+          "allowedBodyTypes": {
+            "default": null,
+            "anyOf": [
+              {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "hatchback",
+                    "sedan",
+                    "coupe",
+                    "crossover",
+                    "suv",
+                    "large_suv",
+                    "minivan",
+                    "pickup"
+                  ]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "benefits": {
+            "default": [],
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            }
+          },
+          "prepNotes": {
+            "default": [],
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            }
+          },
+          "restrictions": {
+            "default": [],
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            }
+          },
+          "recommends": {
+            "default": [],
+            "maxItems": 6,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+            }
+          },
+          "repeatIntervalDays": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 7,
+                "maximum": 1095
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bookableOnline": {
+            "default": true,
+            "type": "boolean"
+          },
+          "variants": {
+            "default": {},
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "enum": [
+                "hatchback",
+                "sedan",
+                "coupe",
+                "crossover",
+                "suv",
+                "large_suv",
+                "minivan",
+                "pickup"
+              ]
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "price": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100000000
+                },
+                "durationMin": {
+                  "type": "integer",
+                  "minimum": 5,
+                  "maximum": 20160
+                }
+              },
+              "required": [
+                "price",
+                "durationMin"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "addons": {
+            "default": [],
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "description": {
+                  "default": "",
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "price": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100000000
+                },
+                "durationMin": {
+                  "default": 0,
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1440
+                }
+              },
+              "required": [
+                "key",
+                "name",
+                "price"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "images": {
+            "default": [],
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "src": {
+                  "type": "string",
+                  "pattern": "^assets\\/[A-Za-z0-9/_.-]+\\.(?:svg|png|jpe?g|webp|avif)$"
+                },
+                "alt": {
+                  "default": "",
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "caption": {
+                  "default": "",
+                  "type": "string",
+                  "maxLength": 200
+                }
+              },
+              "required": [
+                "src"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "durationMin",
+          "price",
+          "resourceTypes"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "owners": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "role": {
+            "default": "owner",
+            "type": "string",
+            "enum": [
+              "owner",
+              "manager",
+              "staff"
+            ]
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "demo": {
+      "type": "object",
+      "properties": {
+        "seedFile": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+\\.json$"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "id",
+    "slug",
+    "name",
+    "timezone",
+    "profile",
+    "branding",
+    "hours",
+    "resources",
+    "services",
+    "owners"
+  ],
+  "additionalProperties": false
+}
