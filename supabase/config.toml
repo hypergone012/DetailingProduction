@@ -1,0 +1,34 @@
+# Supabase project configuration used by `supabase functions deploy` / `supabase db push`.
+project_id = "detailing-production"
+
+[api]
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+site_url = "http://127.0.0.1:5173"
+additional_redirect_urls = ["http://127.0.0.1:5173/**", "http://localhost:5173/**"]
+enable_signup = false
+enable_anonymous_sign_ins = false
+jwt_expiry = 3600
+
+[auth.email]
+enable_signup = false
+enable_confirmations = false
+
+# The public API authenticates clients by device key / booking token, not by JWT.
+[functions.public-api]
+verify_jwt = false
+
+# Owner actions require a valid user JWT; role checks happen in SQL.
+[functions.owner-api]
+verify_jwt = true
+
+# The assistant accepts anonymous clients (client scope) and owners (owner scope, JWT checked in code).
+[functions.assistant]
+verify_jwt = false
+
+# Called by Supabase Cron with x-dispatcher-secret.
+[functions.notify-dispatcher]
+verify_jwt = false

@@ -237,7 +237,7 @@ begin
   insert into public.booking_access_tokens (tenant_id, booking_id, token_hash, purpose)
   values (v_tenant, p_booking, p_token_hash, 'owner_share')
   on conflict (token_hash) do nothing;
-  return jsonb_build_object('ok', true);
+  return jsonb_build_object('ok', true, 'slug', (select slug from public.tenants where id = v_tenant));
 end;
 $$;
 

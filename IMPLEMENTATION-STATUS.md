@@ -73,3 +73,13 @@ react 19.3 · vite 8.3 · react-router 8.4 · @tanstack/react-query 5.104 · zod
 
 Проверки: `pnpm test` — **37 passed** (контраст WCAG всех тем, схема, нормализация); локальная публикация обоих тенантов прошла, повторная публикация — `no changes (idempotent republish)`, 0 загрузок; `pnpm test:db` (publish.test) — republish не трогает runtime-данные, публикация B не меняет A побайтно.
 Решение: SVG не хранится в Storage (риск XSS на origin хранилища) — логотип растеризуется в PNG.
+
+### Этап 4 — готово
+- `packages/core`: WebCrypto-хелперы (HMAC-деривация токенов, SHA-256 → bytea), контракты API (Zod-запросы, типы ответов), коды ошибок → HTTP, ICS (RFC 5545, UTC, SEQUENCE = версия записи), **Web Push без сторонних библиотек** (RFC 8291 aes128gcm + RFC 8292 VAPID ES256), тексты уведомлений в timezone тенанта, генератор PWA-манифеста.
+- `supabase/functions`: `public-api` (каталог, availability, создание записи с Idempotency-Key и детерминированным токеном доступа, просмотр/перенос/отмена по токену или ключу устройства, ICS, гараж, фото авто в private-бакет с подписанными URL, push-подписка, динамический манифест), `owner-api` (ссылка для клиента, роль проверяется SQL под JWT пользователя), `notify-dispatcher` (lease → рендер → VAPID-отправка → отчёт по каждой подписке).
+- Общий слой: CORS по точному allowlist, лимит размера тела (в т.ч. chunked), Zod strict (клиент не может передать цену/tenant), rate limit в БД с хешем IP (`TRUSTED_PROXY_HOPS`), нормализация телефона libphonenumber, без утечки внутренних ошибок.
+- Локальный шлюз повторяет hosted-поведение: публичные/подписанные URL Storage без apikey, verify_jwt по config.toml.
+- `.env.example`: browser-safe (`VITE_*`) отдельно от server-only.
+
+Проверки: `pnpm test` — **46 passed** (+ расшифровка push ключом подписчика, VAPID-подпись, ICS, тексты, токены); `pnpm test:api` — **15 passed** через реальный HTTP (gateway → Deno handler → PostgREST → Postgres/GoTrue/Storage), включая **реальную доставку зашифрованного Web Push по HTTPS** на локальный push-сервис (расшифровка, 410 → отключение подписки, без повторной отправки, demo — ничего не отправляет); `pnpm functions:check` (deno check) — OK.
+Решение: Web Push реализован на WebCrypto (а не `web-push` из npm), чтобы один и тот же код работал в Edge Runtime и в Node-тестах и проверялся расшифровкой.

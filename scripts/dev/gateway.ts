@@ -38,6 +38,15 @@ const defaults: Record<string, string> = {
   SUPABASE_SERVICE_ROLE_KEY: keys.serviceRoleKey,
   SUPABASE_JWT_ISSUER: `${keys.url}/auth/v1`,
 }
+// Local function secrets (pnpm stack:env): ACCESS_TOKEN_SECRET, VAPID keys, APP_URL...
+try {
+  for (const line of (await Deno.readTextFile(new URL('../../.local/functions.env', import.meta.url))).split('\n')) {
+    const i = line.indexOf('=')
+    if (i > 0 && !line.startsWith('#')) defaults[line.slice(0, i)] ??= line.slice(i + 1)
+  }
+} catch {
+  console.warn('no .local/functions.env — run `pnpm stack:env`')
+}
 for (const [k, v] of Object.entries(defaults)) if (!Deno.env.get(k)) Deno.env.set(k, v)
 const secret = new TextEncoder().encode(Deno.env.get('DP_JWT_SECRET') ?? keys.jwtSecret)
 const projectKeys = new Set([keys.anonKey, keys.serviceRoleKey])
@@ -74,6 +83,13 @@ function withCors(res: Response): Response {
 async function proxy(req: Request, prefix: string, upstream: string): Promise<Response> {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
   const apikey = req.headers.get('apikey') ?? new URL(req.url).searchParams.get('apikey')
+  // Like the hosted gateway: public objects and signed URLs need no project key.
+  const openPath = /^\/storage\/v1\/(object|render\/image)\/(public|sign)\//.test(new URL(req.url).pathname) && (req.method === 'GET' || req.method === 'HEAD')
+  if (openPath) {
+    const url = new URL(req.url)
+    const res = await fetch(new URL(upstream + url.pathname.slice(prefix.length) + url.search), { method: req.method })
+    return withCors(res)
+  }
   if (!apikey || !projectKeys.has(apikey)) {
     return withCors(Response.json({ message: 'Invalid API key' }, { status: 401 }))
   }

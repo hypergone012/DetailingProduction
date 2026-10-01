@@ -133,6 +133,23 @@ as $$
     'service_id', m.service_id, 'sort_order', m.sort_order)
 $$;
 
+-- Minimal public facts about a studio (manifest, uploads, routing).
+create or replace function public.api_public_tenant_ref(p_slug text)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  t public.tenants;
+begin
+  t := private.public_tenant(p_slug);
+  return jsonb_build_object('id', t.id, 'slug', t.slug, 'name', t.name, 'status', t.status, 'timezone', t.timezone,
+                            'locale', t.locale, 'currency', t.currency);
+end;
+$$;
+
 -- Everything the client app needs to render a studio.
 create or replace function public.api_public_bootstrap(p_slug text)
 returns jsonb
