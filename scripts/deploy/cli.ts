@@ -21,6 +21,7 @@ import { stripVTControlCharacters } from 'node:util'
 import postgres from 'postgres'
 import { generateVapidKeys } from '@dp/core/push/webpush'
 import { sslFor } from '../db/migrate.ts'
+import { withRetry } from './retry.ts'
 import { explainDbError, functionEnv, normalizeInputs, pickJwtKeys, pickPagesDomain, planSecrets, toDotenv, VAULT_SECRETS, type VaultName } from './plan.ts'
 
 const [command, ...args] = process.argv.slice(2)
@@ -84,7 +85,7 @@ async function check() {
 async function probeDatabase(url: string) {
   const sql = postgres(url, { max: 1, ssl: sslFor(url), connect_timeout: 20, onnotice: () => {} })
   try {
-    await sql`select 1`
+    await withRetry('проверка базы', () => sql`select 1`)
     console.log('✓ база данных отвечает')
   } catch (e) {
     throw new Error(explainDbError(e, url), { cause: e })
@@ -140,7 +141,7 @@ async function extensions() {
   try {
     for (const stmt of ['create extension if not exists pg_cron with schema pg_catalog', 'create extension if not exists pg_net with schema extensions']) {
       try {
-        await sql.unsafe(stmt)
+        await withRetry(stmt, () => sql.unsafe(stmt))
         console.log(`✓ ${stmt}`)
       } catch (e) {
         // Booking works without them; only scheduled notifications would not run.
@@ -224,7 +225,7 @@ function summary() {
   console.log(lines.join('\n'))
 }
 
-const commands: Record<string, () => unknown> = { check, pages, keys, extensions, finalize, auth, summary }
+const commands: Record<string, () => unknown> = { check, pages, keys, extensions, finalize: () => withRetry('Vault и расписания', finalize), auth, summary }
 const run = command ? commands[command] : undefined
 if (!run) {
   console.error(`usage: tsx scripts/deploy/cli.ts ${Object.keys(commands).join('|')}`)

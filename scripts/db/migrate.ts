@@ -8,6 +8,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import postgres from 'postgres'
+import { withRetry } from '../deploy/retry.ts'
 
 export const MIGRATIONS_DIR = join(import.meta.dirname, '../../supabase/migrations')
 
@@ -74,7 +75,7 @@ export async function migrate(databaseUrl: string, log: (m: string) => void = ()
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const url = process.env.DATABASE_URL ?? 'postgres://postgres@127.0.0.1:54322/dp_dev'
-  migrate(url, console.log)
+  withRetry('миграции', () => migrate(url, console.log))
     .then((n) => console.log(n === 0 ? 'database is up to date' : `${n} migration(s) applied`))
     .catch((e: unknown) => {
       console.error(e)
