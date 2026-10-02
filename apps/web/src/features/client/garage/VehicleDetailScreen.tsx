@@ -17,7 +17,10 @@ import { useBookingFlow, type VehicleChoice } from '../booking/flow'
 import { SheetFrame } from '@/components/SheetFrame'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { isUpcoming, useInvalidateClient, useProfile, useSaveVehicle } from '../data'
-import { Card, Section } from '@/components/Section'
+import { Card } from '@/components/Section'
+import { cn } from '@/lib/utils'
+import { PAGE, SiteSection } from '../layout/site'
+import { ServicePicks } from '../shared/ServicePicks'
 import { StatusBadge } from '@/components/StatusBadge'
 import { VehicleGlyph } from '@/components/VehicleGlyph'
 import { suggestionText } from './suggestions'
@@ -67,14 +70,23 @@ export function VehicleDetailScreen() {
       <ScreenHeader
         title={v.nickname || `${v.make} ${v.model}`}
         parent={`/s/${slug}/garage`}
+        site
+        subtitle={`${v.nickname ? `${v.make} ${v.model} · ` : ''}${BODY_TYPE_LABELS[v.body_type]}${v.year ? ` · ${v.year}` : ''}`}
         actions={
-          <Button variant="ghost" size="icon" aria-label="Изменить данные автомобиля" onClick={() => setEditing(true)}>
-            <Pencil />
-          </Button>
+          <>
+            <Button variant="ghost" size="icon" aria-label="Изменить данные автомобиля" onClick={() => setEditing(true)} className="lg:hidden">
+              <Pencil />
+            </Button>
+            <Button variant="secondary" size="lg" onClick={() => setEditing(true)} className="hidden lg:inline-flex">
+              <Pencil /> Изменить данные
+            </Button>
+          </>
         }
       />
-      <div className="mx-auto grid max-w-xl md:max-w-2xl gap-6 px-4 pb-10">
-        <div className="relative overflow-hidden rounded-2xl border border-line bg-sunken">
+      {/* Phone: one column (order-*). Desktop: the car on the left, recommendations and history on the right. */}
+      <div className={cn(PAGE, 'grid gap-6 px-4 pb-10 lg:grid-cols-12 lg:items-start lg:gap-8 lg:pb-4')}>
+        <div className="contents lg:sticky lg:top-[calc(var(--dp-header-offset,0px)+24px)] lg:col-span-5 lg:grid lg:gap-6">
+        <div className="relative order-1 overflow-hidden rounded-2xl border border-line bg-sunken lg:order-none lg:rounded-3xl">
           {v.photo?.url ? (
             <img src={v.photo.url} alt={`${v.make} ${v.model}`} className="aspect-[16/10] w-full object-cover" />
           ) : (
@@ -86,12 +98,12 @@ export function VehicleDetailScreen() {
             <Button size="sm" variant="secondary" loading={uploading} onClick={() => fileRef.current?.click()}>
               <Camera /> {v.photo ? 'Заменить фото' : 'Добавить фото'}
             </Button>
-            <input ref={fileRef} type="file" accept="image/*" className="sr-only" tabIndex={-1} onChange={(e) => void onPhoto(e.target.files?.[0])} />
+            <input ref={fileRef} type="file" accept="image/*" aria-label="Фото автомобиля" className="sr-only" tabIndex={-1} onChange={(e) => void onPhoto(e.target.files?.[0])} />
           </div>
         </div>
-        {photoError && <p className="text-sm text-danger">{photoError}</p>}
+        {photoError && <p className="order-2 text-sm text-danger lg:order-none">{photoError}</p>}
 
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+        <div className="order-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm lg:order-none lg:gap-y-4 lg:rounded-3xl lg:border lg:border-line lg:bg-surface lg:p-6 lg:text-base">
           <Info label="Автомобиль" value={`${v.make} ${v.model}${v.generation ? ` (${v.generation})` : ''}`} />
           <Info label="Кузов" value={BODY_TYPE_LABELS[v.body_type]} />
           {v.year && <Info label="Год" value={String(v.year)} />}
@@ -100,37 +112,43 @@ export function VehicleDetailScreen() {
           <Info label="В гараже с" value={dateWithYear(v.created_at, tz, locale)} />
         </div>
 
-        <Button size="lg" block onClick={() => flow.start({ vehicle: choice })}>
+        <Button size="lg" block onClick={() => flow.start({ vehicle: choice })} className="order-4 lg:order-none">
           Записать этот автомобиль
         </Button>
 
+        <Button variant="ghost" className="order-8 justify-self-center text-danger lg:order-none" onClick={() => setArchiving(true)}>
+          <Trash2 /> Убрать из гаража
+        </Button>
+        </div>
+
+        <div className="contents lg:col-span-7 lg:grid lg:gap-10">
         {v.suggestions.length > 0 && (
-          <Section title="Рекомендации">
+          <SiteSection title="Рекомендации" className="order-5 lg:order-none">
             <div className="grid gap-2">
               {v.suggestions.map((s) => (
-                <Card key={s.service_id} className="flex items-center gap-3 p-3">
-                  <Sparkles className="size-4 shrink-0 text-accent-text" aria-hidden />
-                  <p className="flex-1 text-sm">{suggestionText(s)}</p>
+                <Card key={s.service_id} className="flex items-center gap-3 p-3 lg:gap-4 lg:rounded-2xl lg:p-5">
+                  <Sparkles className="size-4 shrink-0 text-accent-text lg:size-5" aria-hidden />
+                  <p className="flex-1 text-sm lg:text-base">{suggestionText(s)}</p>
                   <Button size="sm" variant="subtle" onClick={() => flow.start({ serviceId: s.service_id, vehicle: choice })}>
                     Записать
                   </Button>
                 </Card>
               ))}
             </div>
-          </Section>
+          </SiteSection>
         )}
 
         {upcoming.length > 0 && (
-          <Section title="Предстоящие">
+          <SiteSection title="Предстоящие" className="order-6 lg:order-none">
             <div className="grid gap-2">
               {upcoming.map((b) => (
                 <HistoryRow key={b.id} b={b} />
               ))}
             </div>
-          </Section>
+          </SiteSection>
         )}
 
-        <Section title="История обслуживания">
+        <SiteSection title="История обслуживания" className="order-7 lg:order-none">
           {past.length === 0 ? (
             <p className="rounded-xl bg-sunken p-4 text-sm text-fg-muted">Пока нет выполненных работ.</p>
           ) : (
@@ -140,11 +158,9 @@ export function VehicleDetailScreen() {
               ))}
             </div>
           )}
-        </Section>
-
-        <Button variant="ghost" className="justify-self-center text-danger" onClick={() => setArchiving(true)}>
-          <Trash2 /> Убрать из гаража
-        </Button>
+        </SiteSection>
+        <ServicePicks vehicleId={v.id} cols={2} />
+        </div>
       </div>
 
       <BottomSheet isOpen={editing} onOpenChange={setEditing} label="Изменить автомобиль" height="tall" purpose="form">
@@ -190,14 +206,14 @@ function Info({ label, value }: { label: string; value: string }) {
 function HistoryRow({ b, onRepeat }: { b: BookingSummary; onRepeat?: () => void }) {
   const { slug, tz, locale, currency } = useTenant()
   return (
-    <Card className="grid gap-3 p-3.5">
+    <Card className="grid gap-3 p-3.5 lg:rounded-2xl lg:p-5">
       <Link to={`/s/${slug}/history/${b.id}`} className="flex items-start justify-between gap-3 outline-none">
         <div className="grid gap-1">
-          <p className="font-medium">{b.service_name}</p>
-          <p className="text-sm text-fg-muted first-letter:uppercase">{when(b.starts_at, tz, locale)}</p>
+          <p className="font-medium lg:text-lg lg:font-semibold">{b.service_name}</p>
+          <p className="text-sm text-fg-muted first-letter:uppercase lg:text-base">{when(b.starts_at, tz, locale)}</p>
         </div>
         <div className="grid justify-items-end gap-1">
-          <span className="text-sm font-semibold tabular">{money(b.price_cents, b.currency || currency, locale)}</span>
+          <span className="text-sm font-semibold tabular lg:text-lg">{money(b.price_cents, b.currency || currency, locale)}</span>
           <StatusBadge status={b.status} />
         </div>
       </Link>

@@ -14,6 +14,8 @@ export function ScreenHeader({
   actions,
   large = false,
   wide = false,
+  site = false,
+  subtitle,
 }: {
   title: string
   parent?: string
@@ -21,6 +23,10 @@ export function ScreenHeader({
   large?: boolean
   /** Full content width (owner cabinet) instead of the phone column. */
   wide?: boolean
+  /** Client site: from `lg` up a page headline across the site width (not sticky; the site header stays on top). */
+  site?: boolean
+  /** Shown under the headline on the desktop site only. */
+  subtitle?: string
 }) {
   const navigate = useNavigate()
   const [scrolled, setScrolled] = useState(false)
@@ -37,19 +43,42 @@ export function ScreenHeader({
   }
   return (
     <header
-      className={cn('sticky top-0 z-30 border-b bg-bg/95 backdrop-blur-sm transition-colors', scrolled ? 'border-line' : 'border-transparent')}
+      className={cn(
+        'sticky top-0 z-30 border-b bg-bg/95 backdrop-blur-sm transition-colors',
+        scrolled ? 'border-line' : 'border-transparent',
+        site && 'lg:static lg:border-transparent lg:bg-transparent lg:backdrop-blur-none',
+      )}
       style={{ paddingTop: 'var(--dp-safe-top)', top: 'var(--dp-header-offset, 0px)' }}
     >
-      <div className={cn('mx-auto flex h-14 items-center gap-1 px-2', wide ? 'max-w-6xl' : 'max-w-xl md:max-w-2xl')}>
+      <div
+        className={cn(
+          'mx-auto flex h-14 items-center gap-1 px-2',
+          wide ? 'max-w-6xl' : 'max-w-xl md:max-w-2xl',
+          site && 'lg:h-auto lg:max-w-[1440px] lg:items-end lg:gap-4 lg:px-8 lg:pt-10 lg:pb-8',
+        )}
+      >
         {parent ? (
-          <Button variant="ghost" size="icon" onClick={back} aria-label="Назад">
+          <Button variant="ghost" size="icon" onClick={back} aria-label="Назад" className={cn(site && 'lg:mb-1 lg:border lg:border-line')}>
             <ChevronLeft />
           </Button>
         ) : (
-          <span className="w-2" />
+          <span className={cn('w-2', site && 'lg:hidden')} />
         )}
-        <h1 className={cn('min-w-0 flex-1 truncate font-semibold', large ? 'text-xl' : 'text-[17px]', !parent && 'pl-2')}>{title}</h1>
-        <div className="flex items-center gap-1">{actions}</div>
+        <div className="grid min-w-0 flex-1 gap-2">
+          <h1
+            className={cn(
+              'min-w-0 truncate font-semibold',
+              large ? 'text-xl' : 'text-[17px]',
+              !parent && 'pl-2',
+              site && 'lg:pl-0 lg:font-bold lg:tracking-tight lg:whitespace-normal',
+              site && (large ? 'lg:text-[40px] lg:leading-tight' : 'lg:text-[32px] lg:leading-tight'),
+            )}
+          >
+            {title}
+          </h1>
+          {site && subtitle && <p className="hidden text-lg text-fg-muted lg:block">{subtitle}</p>}
+        </div>
+        <div className="flex items-center gap-1 lg:gap-3">{actions}</div>
       </div>
     </header>
   )

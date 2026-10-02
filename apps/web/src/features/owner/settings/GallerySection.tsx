@@ -10,7 +10,7 @@ import { tenantQueryKey } from '@/tenant/TenantProvider'
 import { rpc } from '../api/client'
 import type { MediaRow } from '../api/types'
 import { publicMediaUrl, useMedia, useOwner, useOwnerMutation } from '../data'
-import { deleteMedia, uploadImage } from '../shared/upload'
+import { deleteMedia, PHOTO_SIDES, uploadImage } from '../shared/upload'
 
 /** "Работы студии" on the client home page. */
 export function GallerySection() {
@@ -22,10 +22,10 @@ export function GallerySection() {
   const upload = useOwnerMutation(
     async (files: File[]) => {
       for (const file of files) {
-        const up = await uploadImage(tenantId, 'public-media', 'gallery', file)
+        const up = await uploadImage(tenantId, 'public-media', 'gallery', file, PHOTO_SIDES.gallery)
         await rpc('owner_register_media', {
           p_tenant: tenantId,
-          p_media: { kind: 'gallery', bucket: 'public-media', path: up.path, width: up.width, height: up.height, sort_order: -Math.floor(Date.now() / 1000) },
+          p_media: { kind: 'gallery', bucket: 'public-media', path: up.path, variants: up.variants, width: up.width, height: up.height, sort_order: -Math.floor(Date.now() / 1000) },
         })
       }
     },
@@ -75,7 +75,7 @@ function GalleryItem({ m }: { m: MediaRow }) {
   const { slug } = useOwner()
   const [caption, setCaption] = useState(m.caption)
   const update = useOwnerMutation((patch: Record<string, unknown>) => rpc('owner_update_media', { p_media: m.id, p_patch: patch }), [tenantQueryKey(slug)])
-  const remove = useOwnerMutation(() => deleteMedia(m.id), [tenantQueryKey(slug)])
+  const remove = useOwnerMutation(() => deleteMedia(m.id, m.variants.filter((v) => !v.purpose).map((v) => v.path)), [tenantQueryKey(slug)])
   const thumb = m.variants.find((v) => v.w <= 640 && !v.purpose)?.path ?? m.path
   return (
     <figure className="grid gap-1.5">

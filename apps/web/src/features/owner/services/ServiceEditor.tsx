@@ -14,7 +14,7 @@ import type { ResourceRow, ServiceRow } from '../api/types'
 import { useOwner, useOwnerMutation } from '../data'
 import { newEntityKey } from '../shared/keys'
 import { MoneyInput } from '../shared/MoneyInput'
-import { uploadImage } from '../shared/upload'
+import { PHOTO_SIDES, uploadImage } from '../shared/upload'
 
 interface AddonDraft {
   id?: string
@@ -102,11 +102,11 @@ export function ServiceEditor({ service, resources, onDone }: { service: Service
 
   const uploadPhoto = useOwnerMutation(
     async (file: File) => {
-      const up = await uploadImage(tenantId, 'public-media', 'services', file, 1280)
+      const up = await uploadImage(tenantId, 'public-media', 'services', file, PHOTO_SIDES.service)
       // Newest first: the client shows the lowest sort_order.
       await rpc('owner_register_media', {
         p_tenant: tenantId,
-        p_media: { kind: 'service', bucket: 'public-media', path: up.path, width: up.width, height: up.height, service_id: service!.id, alt: name, sort_order: -Math.floor(Date.now() / 1000) },
+        p_media: { kind: 'service', bucket: 'public-media', path: up.path, variants: up.variants, width: up.width, height: up.height, service_id: service!.id, alt: name, sort_order: -Math.floor(Date.now() / 1000) },
       })
     },
     [tenantQueryKey(slug)],

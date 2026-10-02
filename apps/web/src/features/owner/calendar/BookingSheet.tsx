@@ -24,7 +24,7 @@ import { ACTOR_LABEL, EVENT_LABEL, nextActions, PAYMENT_METHOD_LABEL, PAYMENT_ME
 import { MoneyInput } from '../shared/MoneyInput'
 import { Row } from '../shared/Row'
 import { useSheets } from '../shared/sheets'
-import { deleteMedia, uploadImage } from '../shared/upload'
+import { deleteMedia, PHOTO_SIDES, uploadImage } from '../shared/upload'
 
 export function BookingSheet({ id }: { id: string }) {
   const sheets = useSheets()
@@ -324,7 +324,7 @@ function PhotosSection({ b }: { b: OwnerBooking }) {
   const photos = b.media.filter((m) => m.kind === 'before' || m.kind === 'after')
   const urls = useSignedUrls(photos.map((p) => p.path))
   const upload = useOwnerMutation(async (file: File) => {
-    const up = await uploadImage(tenantId, 'private-media', `bookings/${b.id}`, file)
+    const up = await uploadImage(tenantId, 'private-media', `bookings/${b.id}`, file, PHOTO_SIDES.booking)
     await rpc('owner_register_media', {
       p_tenant: tenantId,
       p_media: { kind, bucket: 'private-media', path: up.path, width: up.width, height: up.height, booking_id: b.id, vehicle_id: b.vehicle?.id ?? null, client_visible: true },

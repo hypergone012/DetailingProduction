@@ -14,7 +14,7 @@ import { tenantQueryKey, useTenant } from '@/tenant/TenantProvider'
 import { rpc } from '../api/client'
 import type { SettingsRow } from '../api/types'
 import { useOwner, useOwnerMutation } from '../data'
-import { uploadImage } from '../shared/upload'
+import { PHOTO_SIDES, uploadImage } from '../shared/upload'
 
 /** Studio branding for clients: theme preset, accent, logo, cover photo. */
 export function BrandingSection({ settings }: { settings: SettingsRow }) {
@@ -115,11 +115,11 @@ function ImageSlot({ label, kind, current, square = false, onUploaded }: { label
   const [error, setError] = useState<string | null>(null)
   const upload = useOwnerMutation(
     async (file: File) => {
-      const up = await uploadImage(tenantId, 'public-media', 'branding', file, kind === 'logo' ? 512 : 1920)
+      const up = await uploadImage(tenantId, 'public-media', 'branding', file, PHOTO_SIDES[kind])
       // The newest upload wins (lowest sort_order); config images stay as fallback.
       await rpc('owner_register_media', {
         p_tenant: tenantId,
-        p_media: { kind, bucket: 'public-media', path: up.path, width: up.width, height: up.height, alt: label, sort_order: -Math.floor(Date.now() / 1000) },
+        p_media: { kind, bucket: 'public-media', path: up.path, variants: up.variants, width: up.width, height: up.height, alt: label, sort_order: -Math.floor(Date.now() / 1000) },
       })
     },
     [tenantQueryKey(slug)],

@@ -9,6 +9,7 @@ import { useReturnFocus } from '@/lib/focus'
 import { BookingFlowProvider, useBookingFlow } from './booking/flow'
 import { HomeScreen } from './home/HomeScreen'
 import { BottomNav } from './layout/BottomNav'
+import { SiteFooter } from './layout/SiteFooter'
 import { TopNav } from './layout/TopNav'
 import { ScreenTransition } from './layout/ScreenTransition'
 
@@ -49,7 +50,7 @@ function usePrefetch() {
 
 function ScreenFallback() {
   return (
-    <div className="mx-auto grid max-w-xl md:max-w-2xl gap-3 px-4 pt-[calc(var(--dp-safe-top)+64px)]" aria-busy="true">
+    <div className="mx-auto grid max-w-xl md:max-w-2xl gap-3 px-4 pt-[calc(var(--dp-safe-top)+64px)] lg:max-w-[1440px] lg:px-8" aria-busy="true">
       <Skeleton className="h-24 rounded-2xl" />
       <Skeleton className="h-24 rounded-2xl" />
     </div>
@@ -92,7 +93,7 @@ export function ClientApp() {
         <TenantHead data={data} app="client" />
         <BookingFlowProvider>
           <TopNav />
-          <main className="min-h-dvh pb-[calc(var(--dp-nav-height)+var(--dp-safe-bottom)+8px)] md:pt-16 md:pb-12 md:[--dp-header-offset:4rem]">
+          <main className="min-h-dvh pb-[calc(var(--dp-nav-height)+var(--dp-safe-bottom)+8px)] md:pt-16 md:pb-12 md:[--dp-header-offset:4rem] lg:min-h-[calc(100dvh-200px)] lg:pt-[72px] lg:pb-0 lg:[--dp-header-offset:72px]">
             <ScreenTransition>
               <Suspense fallback={<ScreenFallback />}>
                 <Routes>
@@ -110,6 +111,7 @@ export function ClientApp() {
               </Suspense>
             </ScreenTransition>
           </main>
+          <SiteFooter />
           <BottomNav />
           <Sheets />
           <Assistant />

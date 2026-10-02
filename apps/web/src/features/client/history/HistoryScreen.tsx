@@ -1,6 +1,6 @@
 import type { BookingSummary } from '@dp/core/api/contracts'
 import { useQueries } from '@tanstack/react-query'
-import { CalendarDays, ChevronRight } from 'lucide-react'
+import { CalendarDays, CalendarPlus, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -11,7 +11,10 @@ import { useTenant } from '@/tenant/TenantProvider'
 import { useBookingFlow } from '../booking/flow'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { isUpcoming, keys, useProfile } from '../data'
-import { EmptyState, Section } from '@/components/Section'
+import { Card, EmptyState } from '@/components/Section'
+import { cn } from '@/lib/utils'
+import { PAGE, SiteSection, StudioContactCard } from '../layout/site'
+import { ServicePicks } from '../shared/ServicePicks'
 import { StatusBadge } from '@/components/StatusBadge'
 
 export function HistoryScreen() {
@@ -34,8 +37,9 @@ export function HistoryScreen() {
   const past = all.filter((b) => !isUpcoming(b)).sort((a, b) => b.starts_at.localeCompare(a.starts_at))
   return (
     <>
-      <ScreenHeader title="Мои записи" large />
-      <div className="mx-auto grid max-w-xl md:max-w-2xl gap-6 px-4 pt-1 pb-8">
+      <ScreenHeader title="Мои записи" large site subtitle="Предстоящие визиты и история обслуживания." />
+      <div className={cn(PAGE, 'grid gap-6 px-4 pt-1 pb-8 lg:grid-cols-12 lg:items-start lg:gap-8 lg:pt-0 lg:pb-4')}>
+        <div className="contents lg:col-span-8 lg:grid lg:gap-10">
         {!profile && isFetching ? (
           <div className="grid gap-3">
             <Skeleton className="h-20 rounded-2xl" />
@@ -46,17 +50,20 @@ export function HistoryScreen() {
         ) : (
           <>
             {upcoming.length > 0 && (
-              <Section title="Предстоящие">
+              <SiteSection title="Предстоящие">
                 <List items={upcoming} />
-              </Section>
+              </SiteSection>
             )}
             {past.length > 0 && (
-              <Section title="Прошедшие">
+              <SiteSection title="Прошедшие">
                 <List items={past} />
-              </Section>
+              </SiteSection>
             )}
           </>
         )}
+        {(profile || !isFetching) && <ServicePicks title={all.length ? "Записаться снова" : undefined} />}
+        </div>
+        <HistoryAside all={all} upcoming={upcoming.length} />
       </div>
     </>
   )
@@ -65,16 +72,23 @@ export function HistoryScreen() {
 function List({ items }: { items: BookingSummary[] }) {
   const { slug, tz, locale } = useTenant()
   return (
-    <Stagger as="ul" className="grid gap-2">
+    <Stagger as="ul" className="grid gap-2 lg:gap-3">
       {items.map((b) => (
         <StaggerItem as="li" key={b.id}>
-          <Link to={`/s/${slug}/history/${b.id}`} className="pressable flex items-center gap-3 rounded-2xl border border-line bg-surface p-3.5 shadow-card outline-none focus-visible:ring-2 focus-visible:ring-focus">
+          <Link
+            to={`/s/${slug}/history/${b.id}`}
+            className="pressable flex items-center gap-3 rounded-2xl border border-line bg-surface p-3.5 shadow-card outline-none focus-visible:ring-2 focus-visible:ring-focus lg:gap-6 lg:rounded-3xl lg:p-5 lg:transition-colors lg:hover:border-line-strong"
+          >
+            <span className="hidden size-16 shrink-0 place-items-center rounded-2xl bg-surface-2 lg:grid">
+              <span className="text-xs uppercase leading-none text-fg-muted">{new Intl.DateTimeFormat(locale, { timeZone: tz, month: 'short' }).format(new Date(b.starts_at)).replace('.', '')}</span>
+              <span className="text-2xl leading-none font-bold tabular">{new Intl.DateTimeFormat(locale, { timeZone: tz, day: 'numeric' }).format(new Date(b.starts_at))}</span>
+            </span>
             <div className="grid min-w-0 flex-1 gap-1">
-              <p className="truncate font-medium">{b.service_name}</p>
-              <p className="text-sm text-fg-muted first-letter:uppercase">{when(b.starts_at, tz, locale)}</p>
+              <p className="truncate font-medium lg:text-xl lg:font-semibold">{b.service_name}</p>
+              <p className="text-sm text-fg-muted first-letter:uppercase lg:text-base">{when(b.starts_at, tz, locale)}</p>
             </div>
-            <div className="grid justify-items-end gap-1">
-              <span className="text-sm font-semibold tabular">{money(b.price_cents, b.currency, locale)}</span>
+            <div className="grid justify-items-end gap-1 lg:gap-2">
+              <span className="text-sm font-semibold tabular lg:text-xl lg:font-bold">{money(b.price_cents, b.currency, locale)}</span>
               <StatusBadge status={b.status} />
             </div>
             <ChevronRight className="size-5 text-fg-subtle" aria-hidden />
@@ -82,5 +96,37 @@ function List({ items }: { items: BookingSummary[] }) {
         </StaggerItem>
       ))}
     </Stagger>
+  )
+}
+
+/** Desktop side panel: visits at a glance, a new booking, the studio's contacts. */
+function HistoryAside({ all, upcoming }: { all: BookingSummary[]; upcoming: number }) {
+  const { currency, locale } = useTenant()
+  const flow = useBookingFlow()
+  const done = all.filter((b) => b.status === 'completed')
+  const spent = done.reduce((sum, b) => sum + b.price_cents, 0)
+  const stats = [
+    { label: 'Предстоящих', value: String(upcoming) },
+    { label: 'Визитов', value: String(done.length) },
+    { label: 'Сумма визитов', value: money(spent, done[0]?.currency ?? currency, locale) },
+  ]
+  return (
+    <aside className="hidden content-start gap-6 lg:sticky lg:top-[calc(var(--dp-header-offset,0px)+24px)] lg:col-span-4 lg:grid">
+      <Card className="grid gap-5 rounded-3xl p-6">
+        <p className="text-xl font-semibold">Ваши визиты</p>
+        <dl className="grid grid-cols-3 gap-3">
+          {stats.map((st) => (
+            <div key={st.label} className="grid gap-1 rounded-2xl bg-sunken p-3.5">
+              <dt className="order-2 text-xs text-fg-muted">{st.label}</dt>
+              <dd className="order-1 truncate text-lg font-bold tabular">{st.value}</dd>
+            </div>
+          ))}
+        </dl>
+        <Button size="lg" block onClick={() => flow.start()}>
+          <CalendarPlus /> Новая запись
+        </Button>
+      </Card>
+      <StudioContactCard className="rounded-3xl" />
+    </aside>
   )
 }

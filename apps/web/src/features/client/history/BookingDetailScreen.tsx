@@ -1,7 +1,7 @@
 import { AlertDialog } from '@astryxdesign/core/AlertDialog'
 import { useToast } from '@astryxdesign/core/Toast'
 import { BODY_TYPE_LABELS } from '@dp/core/tenant/constants'
-import { CarFront, Lock, MapPin, MessageSquareText, Phone, RefreshCw, Warehouse, Wrench } from 'lucide-react'
+import { CalendarPlus, CarFront, Lock, MapPin, MessageSquareText, Phone, RefreshCw, Warehouse, Wrench } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router'
 import { StatusScreen } from '@/app/StatusScreen'
@@ -15,7 +15,9 @@ import { ScreenHeader } from '@/components/ScreenHeader'
 import { useBooking, useInvalidateClient } from '../data'
 import { PushCard } from '../profile/PushCard'
 import { CalendarButton } from '../shared/CalendarButton'
-import { Card, Section } from '@/components/Section'
+import { Card } from '@/components/Section'
+import { cn } from '@/lib/utils'
+import { PAGE, SiteSection } from '../layout/site'
 import { StatusBadge } from '@/components/StatusBadge'
 import { RescheduleSheet } from './RescheduleSheet'
 
@@ -34,8 +36,8 @@ export function BookingDetailScreen() {
   if (q.isPending) {
     return (
       <>
-        <ScreenHeader title="Запись" parent={`/s/${slug}/history`} />
-        <div className="mx-auto grid max-w-xl md:max-w-2xl gap-3 px-4">
+        <ScreenHeader title="Запись" parent={`/s/${slug}/history`} site />
+        <div className={cn(PAGE, 'grid gap-3 px-4')}>
           <Skeleton className="h-28 rounded-2xl" />
           <Skeleton className="h-40 rounded-2xl" />
         </div>
@@ -73,19 +75,20 @@ export function BookingDetailScreen() {
 
   return (
     <>
-      <ScreenHeader title={`Запись ${b.code}`} parent={`/s/${slug}/history`} />
-      <div className="mx-auto grid max-w-xl md:max-w-2xl gap-6 px-4 pb-10">
-        <Card className="grid gap-4 p-4">
+      <ScreenHeader title={`Запись ${b.code}`} parent={`/s/${slug}/history`} site subtitle={b.service.name} />
+      <div className={cn(PAGE, 'grid gap-6 px-4 pb-10 lg:grid-cols-12 lg:items-start lg:gap-8 lg:pb-4')}>
+        <div className="contents lg:col-span-7 lg:grid lg:gap-8">
+        <Card className="grid gap-4 p-4 lg:gap-6 lg:rounded-3xl lg:p-8">
           <div className="flex items-start justify-between gap-3">
             <div className="grid gap-1">
-              <p className="text-xl font-semibold first-letter:uppercase">{dateLong(b.starts_at, tz, locale)}</p>
-              <p className="text-fg-muted">{span(b.starts_at, b.ends_at, tz, locale)}</p>
+              <p className="text-xl font-semibold first-letter:uppercase lg:text-[30px] lg:leading-tight lg:font-bold lg:tracking-tight">{dateLong(b.starts_at, tz, locale)}</p>
+              <p className="text-fg-muted lg:text-lg">{span(b.starts_at, b.ends_at, tz, locale)}</p>
             </div>
             <StatusBadge status={b.status} />
           </div>
           {b.status === 'pending' && <p className="rounded-lg bg-warning-subtle px-3 py-2 text-sm text-fg">Студия подтвердит запись. Если включить уведомления — сообщим сразу.</p>}
           {b.multi_day && active && <p className="rounded-lg bg-info-subtle px-3 py-2 text-sm text-fg">Работы займут несколько дней — автомобиль остаётся в студии до {when(b.ends_at, tz, locale)}.</p>}
-          <div className="grid gap-3 border-t border-line pt-4 text-sm">
+          <div className="grid gap-3 border-t border-line pt-4 text-sm lg:gap-4 lg:pt-6 lg:text-base">
             <Line icon={<Wrench />}>{b.service.name}</Line>
             {b.vehicle && (
               <Line icon={<CarFront />}>
@@ -95,14 +98,14 @@ export function BookingDetailScreen() {
             )}
             {b.resource && <Line icon={<Warehouse />}>{b.resource.name}</Line>}
           </div>
-          <div className="grid gap-1.5 border-t border-line pt-4 text-sm">
+          <div className="grid gap-1.5 border-t border-line pt-4 text-sm lg:gap-2.5 lg:pt-6 lg:text-base">
             {b.items.map((i, idx) => (
               <div key={idx} className="flex justify-between gap-3">
                 <span className="text-fg-muted">{i.name}</span>
                 <span className="tabular">{money(i.price_cents, b.currency, locale)}</span>
               </div>
             ))}
-            <div className="mt-1 flex justify-between gap-3 text-base font-semibold">
+            <div className="mt-1 flex justify-between gap-3 text-base font-semibold lg:text-2xl lg:font-bold">
               <span>Итого</span>
               <span className="tabular">{money(b.price_cents, b.currency, locale)}</span>
             </div>
@@ -121,20 +124,22 @@ export function BookingDetailScreen() {
         )}
 
         {media.length > 0 && (
-          <Section title="Фото работ">
+          <SiteSection title="Фото работ">
             <div className="scroll-x -mx-4 flex gap-3 px-4 outline-none focus-visible:ring-2 focus-visible:ring-focus" role="region" aria-label="Фото работ" tabIndex={0}>
               {media.map((m) => (
-                <figure key={m.id} className="w-56 shrink-0">
-                  {m.url && <img src={m.url} alt={m.alt || m.caption} className="aspect-[4/3] w-full rounded-xl object-cover" loading="lazy" />}
+                <figure key={m.id} className="w-56 shrink-0 lg:w-72">
+                  {m.url && <img src={m.url} alt={m.alt || m.caption} className="aspect-[4/3] w-full rounded-xl object-cover lg:rounded-2xl" loading="lazy" />}
                   <figcaption className="mt-1 text-xs text-fg-subtle">{m.kind === 'before' ? 'До' : m.kind === 'after' ? 'После' : m.caption}</figcaption>
                 </figure>
               ))}
             </div>
-          </Section>
+          </SiteSection>
         )}
+        </div>
 
+        <div className="contents lg:sticky lg:top-[calc(var(--dp-header-offset,0px)+24px)] lg:col-span-5 lg:grid lg:gap-8">
         {active && (
-          <Section title="Управление">
+          <SiteSection title="Управление">
             <div className="grid gap-2">
               {b.can_modify ? (
                 <div className="grid grid-cols-2 gap-2">
@@ -152,7 +157,7 @@ export function BookingDetailScreen() {
               )}
               <CalendarButton bookingId={b.id} code={b.code} block />
             </div>
-          </Section>
+          </SiteSection>
         )}
         {active && <PushCard compact />}
 
@@ -162,8 +167,8 @@ export function BookingDetailScreen() {
           </Button>
         )}
 
-        <Section title={studio.name}>
-          <Card className="grid gap-2 p-4 text-sm">
+        <SiteSection title={studio.name}>
+          <Card className="grid gap-2 p-4 text-sm lg:gap-4 lg:rounded-3xl lg:p-6 lg:text-base">
             {studio.address && (
               <a href={studio.map_url ?? undefined} target="_blank" rel="noreferrer" className="flex items-start gap-2 text-fg-muted">
                 <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden /> {studio.address}
@@ -175,7 +180,23 @@ export function BookingDetailScreen() {
               </a>
             )}
           </Card>
-        </Section>
+        </SiteSection>
+        <Card className="hidden gap-4 rounded-3xl p-6 lg:grid">
+          <p className="text-xl font-semibold">Нужна ещё одна услуга?</p>
+          <p className="text-[15px] text-fg-muted">
+            Запишитесь на другое время{b.vehicle ? ` — цена сразу для ${b.vehicle.nickname || `${b.vehicle.make} ${b.vehicle.model}`}` : ''}.
+          </p>
+          <Button
+            size="lg"
+            block
+            onClick={() =>
+              flow.start(b.vehicle ? { vehicle: { kind: 'saved' as const, id: b.vehicle.id, body_type: b.vehicle.body_type, label: b.vehicle.nickname || `${b.vehicle.make} ${b.vehicle.model}` } } : {})
+            }
+          >
+            <CalendarPlus /> Новая запись
+          </Button>
+        </Card>
+        </div>
       </div>
       <RescheduleSheet booking={b} open={moving} onOpenChange={setMoving} onDone={() => showToast({ body: 'Запись перенесена' })} />
       <AlertDialog
@@ -195,7 +216,7 @@ export function BookingDetailScreen() {
 function Line({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <p className="flex items-center gap-3">
-      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-surface-2 text-fg-muted [&_svg]:size-4">{icon}</span>
+      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-surface-2 text-fg-muted lg:size-10 lg:rounded-xl [&_svg]:size-4 lg:[&_svg]:size-5">{icon}</span>
       <span>{children}</span>
     </p>
   )

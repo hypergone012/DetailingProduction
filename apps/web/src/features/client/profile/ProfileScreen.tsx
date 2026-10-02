@@ -2,7 +2,7 @@ import { AlertDialog } from '@astryxdesign/core/AlertDialog'
 import { SegmentedControl, SegmentedControlItem } from '@astryxdesign/core/SegmentedControl'
 import { useToast } from '@astryxdesign/core/Toast'
 import { useQueryClient } from '@tanstack/react-query'
-import { LogOut, MapPin, Phone } from 'lucide-react'
+import { CalendarPlus, LogOut, MapPin, Phone } from 'lucide-react'
 import { useId, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
@@ -16,8 +16,11 @@ import { clearPrivateCaches } from '@/pwa/register'
 import { useAppTheme } from '@/theme/ThemeProvider'
 import { useTenant } from '@/tenant/TenantProvider'
 import { ScreenHeader } from '@/components/ScreenHeader'
+import { useBookingFlow } from '../booking/flow'
 import { useInvalidateClient, useProfile } from '../data'
-import { Card, Section } from '@/components/Section'
+import { Card } from '@/components/Section'
+import { cn } from '@/lib/utils'
+import { PAGE, SiteSection } from '../layout/site'
 import { PhoneInput } from '@/components/PhoneInput'
 import { AppearancePicker } from '@/components/AppearancePicker'
 import { InstallCard } from './InstallCard'
@@ -27,6 +30,7 @@ export function ProfileScreen() {
   const { slug, api, data, locale } = useTenant()
   const { motion, setMotion } = useAppTheme()
   const { profile, hasProfile } = useProfile()
+  const flow = useBookingFlow()
   const qc = useQueryClient()
   const navigate = useNavigate()
   const showToast = useToast()
@@ -50,12 +54,53 @@ export function ProfileScreen() {
 
   return (
     <>
-      <ScreenHeader title="Профиль" large />
-      <div className="mx-auto grid max-w-xl md:max-w-2xl gap-7 px-4 pt-2 pb-8">
-        {hasProfile && profile ? <ContactCard key={profile.profile.id} /> : null}
+      <ScreenHeader title="Профиль" large site subtitle="Контакты для записи, оформление и уведомления на этом устройстве." />
+      {/* Phone: one column (order-*). Desktop: you, the studio and this device on the left; appearance and the app on the right. */}
+      <div className={cn(PAGE, 'grid gap-7 px-4 pt-2 pb-8 lg:grid-cols-2 lg:items-start lg:gap-8 lg:pt-0 lg:pb-4')}>
+        <div className="contents lg:grid lg:gap-8">
+        {hasProfile && profile ? (
+          <ContactCard key={profile.profile.id} />
+        ) : (
+          <Card className="hidden gap-4 rounded-3xl p-6 lg:grid">
+            <p className="text-xl font-semibold">Профиль появится после первой записи</p>
+            <p className="text-[15px] text-fg-muted">Имя, телефон, гараж и история визитов сохранятся на этом устройстве — без регистрации и паролей.</p>
+            <Button size="lg" className="w-fit" onClick={() => flow.start()}>
+              <CalendarPlus /> Записаться
+            </Button>
+          </Card>
+        )}
 
-        <Section title="Оформление">
-          <Card className="grid gap-4 p-4">
+        <SiteSection title="Студия" className="order-4 lg:order-none">
+          <Card className="grid gap-3 p-4 text-sm lg:gap-4 lg:rounded-3xl lg:p-6 lg:text-[15px]">
+            <p className="text-base font-semibold lg:text-lg">{data.tenant.name}</p>
+            {data.profile.address && (
+              <a className="flex items-start gap-2 text-fg-muted" href={data.profile.map_url ?? undefined} target="_blank" rel="noreferrer">
+                <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden /> {data.profile.address}
+              </a>
+            )}
+            {data.profile.phone && (
+              <a className="flex items-center gap-2 text-accent-text" href={`tel:${data.profile.phone}`}>
+                <Phone className="size-4" aria-hidden /> {phonePretty(data.profile.phone)}
+              </a>
+            )}
+          </Card>
+        </SiteSection>
+
+        <SiteSection title="Это устройство" className="order-5 lg:order-none">
+          <Card className="grid gap-3 p-4 text-sm lg:gap-4 lg:rounded-3xl lg:p-6 lg:text-[15px]">
+            <p className="text-fg-muted">
+              Гараж и история записей привязаны к этому устройству без регистрации. «Забыть устройство» удалит их отсюда; записи у студии сохранятся.
+            </p>
+            <Button variant="danger" onClick={() => setForgetOpen(true)} disabled={!device.clientKey(slug) && !device.contact(slug)}>
+              <LogOut /> Забыть это устройство
+            </Button>
+          </Card>
+        </SiteSection>
+        </div>
+
+        <div className="contents lg:grid lg:gap-8">
+        <SiteSection title="Оформление" className="order-2 lg:order-none">
+          <Card className="grid gap-4 p-4 lg:rounded-3xl lg:p-6">
             <AppearancePicker />
             <div className="flex items-center justify-between gap-3 border-t border-line pt-4">
               <div className="grid text-sm">
@@ -68,40 +113,15 @@ export function ProfileScreen() {
               </SegmentedControl>
             </div>
           </Card>
-        </Section>
+        </SiteSection>
 
-        <Section title="Уведомления и приложение">
+        <SiteSection title="Уведомления и приложение" className="order-3 lg:order-none">
           <PushCard />
           <InstallCard name={data.tenant.name} />
-        </Section>
+        </SiteSection>
 
-        <Section title="Студия">
-          <Card className="grid gap-3 p-4 text-sm">
-            <p className="text-base font-semibold">{data.tenant.name}</p>
-            {data.profile.address && (
-              <a className="flex items-start gap-2 text-fg-muted" href={data.profile.map_url ?? undefined} target="_blank" rel="noreferrer">
-                <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden /> {data.profile.address}
-              </a>
-            )}
-            {data.profile.phone && (
-              <a className="flex items-center gap-2 text-accent-text" href={`tel:${data.profile.phone}`}>
-                <Phone className="size-4" aria-hidden /> {phonePretty(data.profile.phone)}
-              </a>
-            )}
-          </Card>
-        </Section>
-
-        <Section title="Это устройство">
-          <Card className="grid gap-3 p-4 text-sm">
-            <p className="text-fg-muted">
-              Гараж и история записей привязаны к этому устройству без регистрации. «Забыть устройство» удалит их отсюда; записи у студии сохранятся.
-            </p>
-            <Button variant="danger" onClick={() => setForgetOpen(true)} disabled={!device.clientKey(slug) && !device.contact(slug)}>
-              <LogOut /> Забыть это устройство
-            </Button>
-          </Card>
-        </Section>
-        <p className="px-1 text-center text-xs text-fg-subtle">
+        </div>
+        <p className="order-6 px-1 text-center text-xs text-fg-subtle lg:col-span-2">
           {data.tenant.status === 'demo' ? 'Демонстрационная студия: уведомления не отправляются. ' : ''}
           {locale === 'ru-RU' ? '' : locale}
         </p>
@@ -148,8 +168,8 @@ function ContactCard() {
     }
   }
   return (
-    <Section title="Контакты">
-      <Card className="p-4">
+    <SiteSection title="Контакты" className="order-1 lg:order-none">
+      <Card className="p-4 lg:rounded-3xl lg:p-6">
         <form className="grid gap-4" onSubmit={save} noValidate>
           <Field id={`${id}-n`} label="Имя">
             <Input id={`${id}-n`} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
@@ -166,6 +186,6 @@ function ContactCard() {
           </Button>
         </form>
       </Card>
-    </Section>
+    </SiteSection>
   )
 }
