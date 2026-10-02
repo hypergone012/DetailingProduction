@@ -83,6 +83,17 @@ export function buildTokens(base: Base, accentOverride?: string | null): ThemeTo
   const accentContrast = contrast(onDark, accent) >= contrast(onLight, accent) ? onDark : onLight
   const accentText = ensureContrast(accent, base.surface, 4.5, base.text)
   const status = dark ? STATUS_DARK : STATUS_LIGHT
+  const subtle = { success: dark ? 0.16 : 0.1, warning: dark ? 0.16 : 0.12, danger: dark ? 0.16 : 0.1, info: dark ? 0.16 : 0.1 }
+  // Status text sits on its own tint (badges, alerts) over any of the canvas layers; nudge it
+  // toward the text color until it reads at 4.5:1 on every one of those combinations.
+  const backdrops = [base.bg, base.bgElevated, base.surface, base.surface2, base.sunken]
+  const statusText = (key: keyof typeof status) => {
+    const c = status[key]
+    const tints = backdrops.flatMap((b) => [b, mix(b, c, subtle[key])])
+    let out = c
+    for (let i = 1; i <= 20 && Math.min(...tints.map((t) => contrast(out, t))) < 4.5; i++) out = mix(c, base.text, i / 20)
+    return out
+  }
   return {
     ...base,
     accent,
@@ -93,14 +104,14 @@ export function buildTokens(base: Base, accentOverride?: string | null): ThemeTo
     accentText,
     accentSubtle: alpha(accent, dark ? 0.16 : 0.1),
     focus: accentText,
-    success: status.success,
-    successSubtle: alpha(status.success, dark ? 0.16 : 0.1),
-    warning: status.warning,
-    warningSubtle: alpha(status.warning, dark ? 0.16 : 0.12),
-    danger: status.danger,
-    dangerSubtle: alpha(status.danger, dark ? 0.16 : 0.1),
-    info: status.info,
-    infoSubtle: alpha(status.info, dark ? 0.16 : 0.1),
+    success: statusText('success'),
+    successSubtle: alpha(status.success, subtle.success),
+    warning: statusText('warning'),
+    warningSubtle: alpha(status.warning, subtle.warning),
+    danger: statusText('danger'),
+    dangerSubtle: alpha(status.danger, subtle.danger),
+    info: statusText('info'),
+    infoSubtle: alpha(status.info, subtle.info),
     shadow: dark ? 'rgba(0, 0, 0, 0.45)' : 'rgba(40, 34, 24, 0.12)',
   }
 }

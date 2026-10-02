@@ -51,7 +51,7 @@ export function SlotTimes({ slots, value, onChange }: { slots: OwnerSlot[]; valu
             )}
           >
             <span>{s.local_time}</span>
-            {s.free_resources > 1 && <span className={cn('-mt-1 text-[10px]', checked ? 'text-accent-fg/80' : 'text-fg-subtle')}>×{s.free_resources}</span>}
+            {s.free_resources > 1 && <span className={cn('-mt-1 text-[10px]', checked ? 'text-accent-fg' : 'text-fg-subtle')}>×{s.free_resources}</span>}
           </button>
         )
       })}

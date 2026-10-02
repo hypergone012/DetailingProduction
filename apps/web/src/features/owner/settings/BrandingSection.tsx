@@ -137,6 +137,7 @@ function ImageSlot({ label, kind, current, square = false, onUploaded }: { label
       <input
         ref={ref}
         type="file"
+        aria-label={`Заменить: ${label}`}
         accept="image/*"
         className="sr-only"
         tabIndex={-1}

@@ -207,7 +207,7 @@ function HistoryRow({ b, onRepeat }: { b: BookingSummary; onRepeat?: () => void 
         </p>
       )}
       {b.media.length > 0 && (
-        <div className="scroll-x flex gap-2">
+        <div className="scroll-x flex gap-2 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-focus" role="region" aria-label="Фото работ" tabIndex={0}>
           {b.media.map((m) => (
             <figure key={m.id} className="shrink-0">
               {m.url && <img src={m.url} alt={m.alt || (m.kind === 'before' ? 'До' : 'После')} className="h-24 w-32 rounded-lg object-cover" loading="lazy" />}

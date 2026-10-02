@@ -27,7 +27,7 @@ export function ServiceDetailScreen() {
       <ScreenHeader title={s.name} parent={`/s/${slug}/services`} />
       <div className="mx-auto grid max-w-xl gap-6 px-4 pb-32">
         {images.length > 0 && (
-          <div className="scroll-x -mx-4 flex gap-2 px-4">
+          <div className="scroll-x -mx-4 flex gap-2 px-4 outline-none focus-visible:ring-2 focus-visible:ring-focus" role="region" aria-label={`Фото: ${s.name}`} tabIndex={0}>
             {images.map((m, i) => (
               <Img key={m.id} media={m} priority={i === 0} sizes="(max-width: 640px) 92vw, 600px" className="aspect-[16/10] w-[92%] shrink-0 snap-center rounded-2xl" />
             ))}

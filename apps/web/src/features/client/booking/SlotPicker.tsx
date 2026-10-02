@@ -91,7 +91,7 @@ export function SlotPicker({ serviceId, bodyType, addonIds, value, onChange, res
                   )}
                 >
                   {selected && <m.span layoutId="day-pill" className="absolute inset-0 -z-0 rounded-xl bg-accent" transition={spring} aria-hidden />}
-                  <span className={cn('relative text-[11px] uppercase', selected ? 'text-accent-fg/80' : 'text-fg-subtle')}>{p.weekday}</span>
+                  <span className={cn('relative text-[11px] uppercase', selected ? 'text-accent-fg' : 'text-fg-subtle')}>{p.weekday}</span>
                   <span className="relative text-lg font-semibold tabular">{p.day}</span>
                   <span className={cn('relative h-1 w-1 rounded-full', count > 0 ? (selected ? 'bg-accent-fg' : 'bg-success') : 'bg-transparent')} />
                 </button>

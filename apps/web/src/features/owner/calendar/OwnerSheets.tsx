@@ -1,4 +1,5 @@
 import { BottomSheet, BottomSheetSwitcher } from '@astryxdesign/core/BottomSheet'
+import { useReturnFocus } from '@/lib/focus'
 import { useSheets } from '../shared/sheets'
 import { BlockDetailSheet, NewBlockSheet } from './BlockSheet'
 import { BookingSheet } from './BookingSheet'
@@ -9,6 +10,7 @@ import { MoveSheet } from './MoveSheet'
 export function OwnerSheets() {
   const s = useSheets()
   const active = s.bookingId ? (s.move ? 'move' : 'booking') : s.blockId ? 'block' : s.create === 'booking' ? 'new-booking' : s.create === 'block' ? 'new-block' : null
+  useReturnFocus(active !== null)
   return (
     <BottomSheetSwitcher activeSheet={active} onActiveSheetChange={(next) => (next === null ? s.close() : undefined)}>
       <BottomSheet sheetId="booking" label="Запись" height="tall">

@@ -356,6 +356,7 @@ function PhotosSection({ b }: { b: OwnerBooking }) {
             <input
               ref={fileRef}
               type="file"
+              aria-label={kind === 'before' ? 'Фото до' : 'Фото после'}
               accept="image/*"
               className="sr-only"
               tabIndex={-1}

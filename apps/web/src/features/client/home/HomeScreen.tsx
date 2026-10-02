@@ -268,7 +268,7 @@ function Gallery() {
   const { mediaFor } = useTenant()
   return (
     <Section title="Работы студии">
-      <div className="scroll-x -mx-4 flex gap-3 px-4 pb-1">
+      <div className="scroll-x -mx-4 flex gap-3 px-4 pb-1 outline-none focus-visible:ring-2 focus-visible:ring-focus" role="region" aria-label="Работы студии" tabIndex={0}>
         {mediaFor('gallery').map((m) => (
           <figure key={m.id} className="w-[min(78vw,300px)] shrink-0 snap-start">
             <Img media={m} sizes="300px" className="aspect-[4/3] w-full rounded-2xl" />

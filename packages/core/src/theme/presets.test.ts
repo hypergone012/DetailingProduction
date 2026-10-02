@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { contrast, isHarsh, toHsl } from './color.ts'
+import { contrast, isHarsh, mix, toHsl } from './color.ts'
 import { THEME_PRESET_IDS, THEME_PRESETS, resolveTheme, themeToCssVars } from './presets.ts'
 
 describe('theme presets', () => {
@@ -22,6 +22,16 @@ describe('theme presets', () => {
         expect(contrast(t.accentText, t.surface)).toBeGreaterThanOrEqual(4.5)
         expect(contrast(t.focus, t.bg)).toBeGreaterThanOrEqual(3)
         for (const s of [t.success, t.warning, t.danger, t.info]) expect(contrast(s, t.surface)).toBeGreaterThanOrEqual(4.5)
+      })
+
+      it('status text reads at 4.5:1 on its own tint over every canvas layer (badges, alerts)', () => {
+        for (const [fg, tint] of [[t.success, t.successSubtle], [t.warning, t.warningSubtle], [t.danger, t.dangerSubtle], [t.info, t.infoSubtle]] as const) {
+          const m = /rgba\((\d+), (\d+), (\d+), ([\d.]+)\)/.exec(tint)!
+          const hex = '#' + [m[1], m[2], m[3]].map((v) => Number(v).toString(16).padStart(2, '0')).join('')
+          for (const layer of [t.bg, t.bgElevated, t.surface, t.surface2, t.sunken]) {
+            expect(contrast(fg, mix(layer, hex, Number(m[4]))), `${fg} on ${tint} over ${layer}`).toBeGreaterThanOrEqual(4.5)
+          }
+        }
       })
 
       it('uses no pure or acid colors', () => {

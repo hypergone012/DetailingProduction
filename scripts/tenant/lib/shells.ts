@@ -7,7 +7,7 @@
  * manifests. Nothing studio-specific is compiled into the bundle: the shells are generated
  * from the published data (the same bootstrap the app loads), after `vite build`.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Bootstrap } from '@dp/core/api/contracts'
 import { buildManifest, tenantThemeColors, type ManifestInput } from '@dp/core/tenant/manifest'
@@ -133,6 +133,14 @@ export async function writeShells(env: Env, distDir: string, log: (m: string) =>
     }
     reports.push({ slug: t.slug, files })
     log(`✓ ${t.slug} (${t.status}): client + owner shells and manifests`)
+  }
+  // dist/s/ holds nothing but these shells: a studio that was deleted, unpublished or
+  // renamed must not keep a page and an installable manifest on the static host.
+  const published = new Set(tenants.map((t) => t.slug))
+  for (const slug of existsSync(join(distDir, 's')) ? readdirSync(join(distDir, 's')) : []) {
+    if (published.has(slug)) continue
+    rmSync(join(distDir, 's', slug), { recursive: true, force: true })
+    log(`✓ removed stale shell s/${slug}`)
   }
   writeFileSync(join(distDir, '_redirects'), redirectsFile(tenants.map((t) => t.slug)))
   log(`✓ _redirects (${tenants.length} studio(s))`)

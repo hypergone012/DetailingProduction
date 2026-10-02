@@ -5,6 +5,7 @@ import { MotionProvider } from '@/motion/MotionProvider'
 import { TenantHead } from '@/tenant/TenantHead'
 import { useTenant } from '@/tenant/TenantProvider'
 import { ThemeProvider } from '@/theme/ThemeProvider'
+import { useReturnFocus } from '@/lib/focus'
 import { BookingFlowProvider, useBookingFlow } from './booking/flow'
 import { HomeScreen } from './home/HomeScreen'
 import { BottomNav } from './layout/BottomNav'
@@ -57,6 +58,7 @@ function ScreenFallback() {
 /** Mounts the booking sheets only once a flow starts (their code is not needed before). */
 function Sheets() {
   const flow = useBookingFlow()
+  useReturnFocus(Boolean(flow.step))
   if (!flow.step) return null
   return (
     <Suspense fallback={null}>
@@ -88,7 +90,7 @@ export function ClientApp() {
       <MotionProvider>
         <TenantHead data={data} app="client" />
         <BookingFlowProvider>
-          <div className="min-h-dvh pb-[calc(var(--dp-nav-height)+var(--dp-safe-bottom)+8px)]">
+          <main className="min-h-dvh pb-[calc(var(--dp-nav-height)+var(--dp-safe-bottom)+8px)]">
             <ScreenTransition>
               <Suspense fallback={<ScreenFallback />}>
                 <Routes>
@@ -105,7 +107,7 @@ export function ClientApp() {
                 </Routes>
               </Suspense>
             </ScreenTransition>
-          </div>
+          </main>
           <BottomNav />
           <Sheets />
           <Assistant />

@@ -225,6 +225,7 @@ export function ServiceEditor({ service, resources, onDone }: { service: Service
             <input
               ref={photoRef}
               type="file"
+              aria-label="Загрузить фото услуги"
               accept="image/*"
               className="sr-only"
               tabIndex={-1}

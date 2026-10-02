@@ -164,11 +164,10 @@ function Lanes({ data, date, layout }: { data: CalendarData; date: string; layou
           ))}
         </div>
         {data.resources.map((r) => (
+          // Tapping free space is a pointer shortcut that pre-fills time and lane; the lane is not
+          // a control itself (it holds the booking buttons). Keyboard users have the "Запись" button above.
           <div
             key={r.id}
-            role={canManage ? 'button' : undefined}
-            tabIndex={-1}
-            aria-label={canManage ? `Новая запись: ${r.name}` : undefined}
             className={cn('relative border-l border-line', canManage && 'cursor-copy')}
             style={{ height }}
             onClick={(e) => onLaneClick(e, r.id)}
@@ -258,7 +257,7 @@ function ItemCard({ item, layout }: { item: CalendarItem; layout: Layout }) {
         <span className="truncate font-medium text-fg">{b.customer.name}</span>
         <span className="truncate text-fg-muted">{b.service_name}</span>
         {b.vehicle && (
-          <span className="truncate text-fg-subtle">
+          <span className="truncate text-fg-muted">
             {b.vehicle.make} {b.vehicle.model}
             {b.vehicle.plate ? ` · ${b.vehicle.plate}` : ''}
           </span>

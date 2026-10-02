@@ -130,7 +130,7 @@ function OwnerShell() {
   const { slug } = useTenant()
   return (
     <>
-      <div className="min-h-dvh pb-[calc(var(--dp-nav-height)+var(--dp-safe-bottom)+8px)] md:pb-8 md:pl-[88px]">
+      <main className="min-h-dvh pb-[calc(var(--dp-nav-height)+var(--dp-safe-bottom)+8px)] md:pb-8 md:pl-[88px]">
         <Suspense fallback={<Splash />}>
           <Routes>
             <Route path="owner" element={<TodayScreen />} />
@@ -143,7 +143,7 @@ function OwnerShell() {
             <Route path="*" element={<Navigate to={`/s/${slug}/owner`} replace />} />
           </Routes>
         </Suspense>
-      </div>
+      </main>
       <OwnerNav />
       <Suspense fallback={null}>
         <OwnerSheets />

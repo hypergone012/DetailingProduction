@@ -42,6 +42,7 @@ export function GallerySection() {
           <input
             ref={ref}
             type="file"
+            aria-label="Добавить фото работ"
             accept="image/*"
             multiple
             className="sr-only"

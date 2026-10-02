@@ -122,7 +122,7 @@ export function BookingDetailScreen() {
 
         {media.length > 0 && (
           <Section title="Фото работ">
-            <div className="scroll-x -mx-4 flex gap-3 px-4">
+            <div className="scroll-x -mx-4 flex gap-3 px-4 outline-none focus-visible:ring-2 focus-visible:ring-focus" role="region" aria-label="Фото работ" tabIndex={0}>
               {media.map((m) => (
                 <figure key={m.id} className="w-56 shrink-0">
                   {m.url && <img src={m.url} alt={m.alt || m.caption} className="aspect-[4/3] w-full rounded-xl object-cover" loading="lazy" />}
