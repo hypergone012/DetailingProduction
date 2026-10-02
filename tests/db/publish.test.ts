@@ -188,3 +188,42 @@ describe('tenant remove', () => {
     expect((await remove(a.slug, true)).orphan_users).toEqual([])
   })
 })
+
+describe('repair of deletions made before removals were recorded (…019)', () => {
+  const repair = async (tenantId: string) =>
+    ((await sql`select private.restore_owner_removals(${tenantId}) as r`)[0]!.r as string[]).sort()
+
+  it('deletes again what a republish brought back, and only that', async () => {
+    const t = await createTenant()
+    const days = [await localDay(t.timezone, 20), await localDay(t.timezone, 21)]
+    const photo = (key: string) => ({ key, kind: 'gallery', path: `${t.id}/config/${key}.webp`, width: 1200, height: 900, alt: key, caption: '', sort_order: 0 })
+    const config = {
+      ...t.config,
+      media: [photo('deleted-by-owner'), photo('edited-after'), photo('untouched'), photo('left-config')],
+      exceptions: days.map((day) => ({ day, closed: true, opens: null, closes: null, note: '' })),
+    }
+    await publish(config)
+    // Before …017: the cabinet deleted rows without recording it
+    await sql`delete from public.media where tenant_id = ${t.id} and key in ('deleted-by-owner', 'edited-after')`
+    await sql`delete from public.business_exceptions where tenant_id = ${t.id} and day = ${days[0]!}`
+    // 'left-config' leaves the config and comes back: a legitimate re-creation
+    const mid = (await publish({ ...config, media: config.media.filter((m) => m.key !== 'left-config') })) as unknown as Report
+    const back = (await publish(config)) as unknown as Report
+    expect(mid.deleted).toEqual(['media:left-config'])
+    expect([...mid.created, ...back.created].sort()).toEqual(['media:deleted-by-owner', 'media:edited-after', 'media:left-config', `exception:${days[0]}`].sort())
+    // The owner edits one of the resurrected photos afterwards: they want it now
+    const [edited] = await sql`select id from public.media where tenant_id = ${t.id} and key = 'edited-after'`
+    await ownerCall(t.ownerId, 'owner_update_media', edited!.id, { caption: 'Моё' })
+
+    expect(await repair(t.id)).toEqual(['media:deleted-by-owner', `exception:${days[0]}`].sort())
+    const keys = await sql`select key from public.media where tenant_id = ${t.id} order by key`
+    expect(keys.map((k) => k.key)).toEqual(['edited-after', 'left-config', 'untouched'])
+    const left = await sql`select to_char(day, 'YYYY-MM-DD') d from public.business_exceptions where tenant_id = ${t.id}`
+    expect(left.map((r) => r.d)).toEqual([days[1]])
+
+    const after = (await publish(config)) as unknown as Report
+    expect(after.created).toEqual([])
+    expect(after.kept_owner_edits).toEqual(expect.arrayContaining(['media:deleted-by-owner', `exception:${days[0]}`]))
+    expect(await repair(t.id)).toEqual([]) // running it again changes nothing
+  })
+})
