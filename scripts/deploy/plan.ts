@@ -147,8 +147,9 @@ const clean = (v: string | undefined) => (v ?? '').trim().replace(/^["'«](.*)["
  * Russian. Tolerates the usual copy-paste slips (the whole dashboard address instead of the id,
  * spaces, line breaks, quotes); never echoes a secret value, only its shape.
  */
-export function normalizeInputs(raw: RawInputs): { inputs: Inputs; problems: string[] } {
+export function normalizeInputs(raw: RawInputs): { inputs: Inputs; problems: string[]; warnings: string[] } {
   const problems: string[] = []
+  const warnings: string[] = []
   const v = Object.fromEntries(Object.entries(raw).map(([k, x]) => [k, clean(x)])) as Record<keyof RawInputs, string>
 
   // Supabase project ref: 20 lowercase letters, or a dashboard / API address that contains it.
@@ -175,11 +176,16 @@ export function normalizeInputs(raw: RawInputs): { inputs: Inputs; problems: str
       const host = url.hostname
       if (!/^postgres(ql)?:$/.test(url.protocol)) problems.push('SUPABASE_DB_URL: строка должна начинаться с postgresql:// (Connect → Connection String → Session pooler).')
       else if (/^db\..+\.supabase\.co$/.test(host)) problems.push('SUPABASE_DB_URL: это строка «Direct connection». Нужна строка из блока «Session pooler» (Connect → Session pooler), в ней адрес …pooler.supabase.com:5432.')
-      else if (!host.endsWith('.pooler.supabase.com')) problems.push('SUPABASE_DB_URL: адрес базы должен заканчиваться на pooler.supabase.com (Connect → Session pooler).')
       else if (url.port === '6543') problems.push('SUPABASE_DB_URL: это «Transaction pooler» (порт 6543). Нужен «Session pooler» — порт 5432.')
       else if (!url.password) problems.push('SUPABASE_DB_URL: в строке нет пароля — после «postgres.<ref>:» должен идти пароль базы, затем «@».')
-      else if (ref && decodeURIComponent(url.username) !== `postgres.${ref}`) problems.push('SUPABASE_DB_URL: строка подключения от другого проекта, чем SUPABASE_PROJECT_REF (в начале строки должно быть postgres.<ваш ref>).')
-      else databaseUrl = v.databaseUrl.replace(/\s+/g, '')
+      else if (host.endsWith('.pooler.supabase.com') && ref && decodeURIComponent(url.username) !== `postgres.${ref}`)
+        problems.push('SUPABASE_DB_URL: строка подключения от другого проекта, чем SUPABASE_PROJECT_REF (в начале строки должно быть postgres.<ваш ref>).')
+      else {
+        // An unfamiliar host is not rejected (Supabase may change its pooler addresses): the
+        // connection probe that follows tells whether it works. Host and port are not secret.
+        if (!host.endsWith('.pooler.supabase.com')) warnings.push(`SUPABASE_DB_URL: необычный адрес базы «${host}:${url.port || '5432'}» — ожидался …pooler.supabase.com:5432 (Connect → Session pooler). Пробую подключиться.`)
+        databaseUrl = v.databaseUrl.replace(/\s+/g, '')
+      }
     }
   }
 
@@ -208,5 +214,36 @@ export function normalizeInputs(raw: RawInputs): { inputs: Inputs; problems: str
   return {
     inputs: { accessToken: v.accessToken, projectRef: ref, databaseUrl, cfApiToken: v.cfApiToken, cfAccountId: accountId, demoPassword: v.demoPassword, llmApiKey: v.llmApiKey, pagesProject: v.pagesProject },
     problems,
+    warnings,
   }
+}
+
+/**
+ * A failed database connection in plain Russian: what is wrong and where to fix it. The
+ * password is never part of the text; host and port are (they are not secret).
+ */
+export function explainDbError(e: unknown, databaseUrl: string): string {
+  const err = (e ?? {}) as { code?: string; message?: string }
+  let host = ''
+  let port = '5432'
+  let password = ''
+  try {
+    const u = new URL(databaseUrl)
+    host = u.hostname
+    port = u.port || '5432'
+    password = decodeURIComponent(u.password)
+  } catch {
+    // keep defaults
+  }
+  const raw = String(err.message ?? e)
+  const message = password ? raw.split(password).join('***') : raw
+  const where = host ? ` (${host}:${port})` : ''
+  if (err.code === '28P01' || /password authentication failed/i.test(raw))
+    return `SUPABASE_DB_URL: база отклонила пароль${where}. Проверьте пароль в строке. Если не помните — Supabase → Project Settings → Database → Reset database password (только буквы и цифры), вставьте новый пароль в строку и обновите секрет.`
+  if (/tenant or user not found/i.test(raw))
+    return `SUPABASE_DB_URL: сервер не узнал пользователя${where}. В строке Session pooler имя пользователя — postgres.<ваш ref>. Скопируйте строку заново: Connect → Session pooler.`
+  if (err.code === 'ENOTFOUND' || err.code === 'EAI_AGAIN') return `SUPABASE_DB_URL: сервер базы «${host}» не найден. Скопируйте строку заново: Connect → Session pooler.`
+  if (['ENETUNREACH', 'EHOSTUNREACH', 'ETIMEDOUT', 'ECONNREFUSED', 'CONNECT_TIMEOUT'].includes(err.code ?? ''))
+    return `SUPABASE_DB_URL: не удаётся подключиться к ${host}:${port}. Скорее всего это строка «Direct connection» (она работает только по IPv6). Нужна строка из блока «Session pooler» (Connect → Session pooler), порт 5432.`
+  return `SUPABASE_DB_URL: не удалось подключиться к базе${where}: ${message}`
 }

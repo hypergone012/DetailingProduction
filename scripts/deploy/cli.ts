@@ -21,7 +21,7 @@ import { stripVTControlCharacters } from 'node:util'
 import postgres from 'postgres'
 import { generateVapidKeys } from '@dp/core/push/webpush'
 import { sslFor } from '../db/migrate.ts'
-import { functionEnv, normalizeInputs, pickJwtKeys, pickPagesDomain, planSecrets, toDotenv, VAULT_SECRETS, type VaultName } from './plan.ts'
+import { explainDbError, functionEnv, normalizeInputs, pickJwtKeys, pickPagesDomain, planSecrets, toDotenv, VAULT_SECRETS, type VaultName } from './plan.ts'
 
 const [command, ...args] = process.argv.slice(2)
 const flag = (name: string) => args.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3)
@@ -49,9 +49,9 @@ function db() {
 }
 
 /** Repository secrets arrive as RAW_*; the exact values go to $GITHUB_ENV under the names the steps use. */
-function check() {
+async function check() {
   const env = process.env
-  const { inputs, problems } = normalizeInputs({
+  const { inputs, problems, warnings } = normalizeInputs({
     accessToken: env.RAW_SUPABASE_ACCESS_TOKEN,
     projectRef: env.RAW_SUPABASE_PROJECT_REF,
     databaseUrl: env.RAW_SUPABASE_DB_URL,
@@ -66,6 +66,8 @@ function check() {
     throw new Error(`Секреты репозитория: ${problems.length} ${problems.length === 1 ? 'ошибка' : 'ошибки'} — исправьте в Settings → Secrets and variables → Actions и запустите снова (подробности выше; DEPLOY-IN-BROWSER.md, шаг 3).`)
   }
   for (const value of [inputs.accessToken, inputs.databaseUrl, inputs.cfApiToken, inputs.cfAccountId, inputs.demoPassword, inputs.llmApiKey, inputs.projectRef]) if (value) mask(value)
+  for (const w of warnings) console.log(`::warning::${w}`)
+  await probeDatabase(inputs.databaseUrl)
   exportEnv('SUPABASE_ACCESS_TOKEN', inputs.accessToken)
   exportEnv('SUPABASE_PROJECT_REF', inputs.projectRef)
   exportEnv('DATABASE_URL', inputs.databaseUrl)
@@ -74,6 +76,19 @@ function check() {
   exportEnv('TENANT_DEMO_OWNER_PASSWORD', inputs.demoPassword)
   if (inputs.llmApiKey) exportEnv('LLM_API_KEY', inputs.llmApiKey)
   console.log(`✓ секреты на месте и в правильном виде${inputs.llmApiKey ? ' (умный помощник включён)' : ' (умный помощник — по шаблонам, LLM_API_KEY не задан)'}`)
+}
+
+/** One cheap query, so a wrong connection string is reported before anything is deployed. */
+async function probeDatabase(url: string) {
+  const sql = postgres(url, { max: 1, ssl: sslFor(url), connect_timeout: 20, onnotice: () => {} })
+  try {
+    await sql`select 1`
+    console.log('✓ база данных отвечает')
+  } catch (e) {
+    throw new Error(explainDbError(e, url), { cause: e })
+  } finally {
+    await sql.end({ timeout: 5 }).catch(() => {})
+  }
 }
 
 const WRANGLER = ['dlx', 'wrangler@4.146.0']
@@ -216,6 +231,6 @@ if (!run) {
 Promise.resolve()
   .then(run)
   .catch((e: unknown) => {
-    console.error(`::error::${(e as Error).message}`)
+    console.log(`::error::${(e as Error).message}`)
     process.exit(1)
   })

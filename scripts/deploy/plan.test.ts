@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { functionEnv, normalizeInputs, pickJwtKeys, pickPagesDomain, planSecrets, toDotenv, type Generators } from './plan.ts'
+import { explainDbError, functionEnv, normalizeInputs, pickJwtKeys, pickPagesDomain, planSecrets, toDotenv, type Generators } from './plan.ts'
 
 const gen: Generators = {
   random: (n) => `r${n}`,
@@ -69,7 +69,7 @@ describe('repository secrets as people paste them', () => {
   }
 
   it('accepts correct values as they are', () => {
-    expect(normalizeInputs(good)).toEqual({ inputs: good, problems: [] })
+    expect(normalizeInputs(good)).toEqual({ inputs: good, problems: [], warnings: [] })
   })
 
   it('repairs the usual copy-paste slips: whole dashboard addresses, spaces, line breaks, quotes', () => {
@@ -109,5 +109,33 @@ describe('repository secrets as people paste them', () => {
   it('reports every missing secret at once', () => {
     const { problems } = normalizeInputs({ pagesProject: 'detailing-studio' })
     expect(problems.filter((p) => p.startsWith('Не задан секрет'))).toHaveLength(6)
+  })
+})
+
+describe('database connection errors', () => {
+  const url = 'postgresql://postgres.abcdefghijklmnopqrst:S3cretPw9@aws-0-eu-central-1.pooler.supabase.com:5432/postgres'
+  it('turns driver errors into plain advice and never repeats the password', () => {
+    expect(explainDbError({ code: '28P01', message: 'password authentication failed for user "postgres"' }, url)).toMatch(/отклонила пароль.*Reset database password/)
+    expect(explainDbError({ code: 'XX000', message: 'Tenant or user not found' }, url)).toMatch(/postgres\.<ваш ref>/)
+    expect(explainDbError({ code: 'ENOTFOUND', message: 'getaddrinfo ENOTFOUND x' }, url)).toMatch(/не найден/)
+    expect(explainDbError({ code: 'ENETUNREACH', message: 'connect ENETUNREACH 2a05::1:5432' }, url)).toMatch(/Direct connection.*Session pooler/)
+    const other = explainDbError({ message: 'weird failure for S3cretPw9' }, url)
+    expect(other).toContain('aws-0-eu-central-1.pooler.supabase.com:5432')
+    expect(other).not.toContain('S3cretPw9')
+  })
+
+  it('an unfamiliar database host is a warning plus a connection probe, not a hard stop', () => {
+    const r = normalizeInputs({
+      accessToken: `sbp_${'test'.repeat(10)}`,
+      projectRef: 'abcdefghijklmnopqrst',
+      databaseUrl: 'postgresql://postgres.abcdefghijklmnopqrst:pw123456@eu-central-1.pooler.supabase.net:5432/postgres',
+      cfApiToken: 'AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-Ab',
+      cfAccountId: '0123456789abcdef0123456789abcdef',
+      demoPassword: 'demo-pass-2026',
+      pagesProject: 'detailing-studio',
+    })
+    expect(r.problems).toEqual([])
+    expect(r.warnings.join(' ')).toContain('eu-central-1.pooler.supabase.net:5432')
+    expect(r.inputs.databaseUrl).toContain('pooler.supabase.net')
   })
 })
