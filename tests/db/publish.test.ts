@@ -83,6 +83,34 @@ describe('tenant publish', () => {
     expect(n).toBe(1)
   })
 
+  it('a photo or day off the owner deleted stays deleted after republishing', async () => {
+    const t = await createTenant()
+    const day = await localDay(t.timezone, 20)
+    const media = [
+      { key: 'hero', kind: 'hero', path: `${t.id}/config/hero.webp`, width: 1600, height: 900, alt: 'Бокс', caption: '', sort_order: 0 },
+      { key: 'gallery-1', kind: 'gallery', path: `${t.id}/config/g1.webp`, width: 1200, height: 900, alt: 'Работа', caption: '', sort_order: 1 },
+    ]
+    const config = { ...t.config, media, exceptions: [{ day, closed: true, opens: null, closes: null, note: 'Праздник' }] }
+    await publish(config)
+    const [hero] = await sql`select id from public.media where tenant_id = ${t.id} and key = 'hero'`
+    const [off] = await sql`select id from public.business_exceptions where tenant_id = ${t.id} and day = ${day}`
+    await ownerCall(t.ownerId, 'owner_delete_media', hero!.id)
+    await ownerCall(t.ownerId, 'owner_delete_exception', off!.id)
+
+    const r = (await publish(config)) as unknown as Report
+    expect(r.created).toEqual([])
+    expect(r.kept_owner_edits).toEqual(expect.arrayContaining(['media:hero', `exception:${day}`]))
+    const keys = await sql`select key from public.media where tenant_id = ${t.id} order by key`
+    expect(keys.map((k) => k.key)).toEqual(['gallery-1'])
+    expect(await count(sql`select count(*)::int n from public.business_exceptions where tenant_id = ${t.id}`)).toBe(0)
+
+    // --overwrite restores the config, like it does for edited rows
+    const r2 = (await publish(config, true)) as unknown as Report
+    expect(r2.created).toEqual(expect.arrayContaining(['media:hero', `exception:${day}`]))
+    expect(await count(sql`select count(*)::int n from public.media where tenant_id = ${t.id}`)).toBe(2)
+    expect(await count(sql`select count(*)::int n from public.business_exceptions where tenant_id = ${t.id}`)).toBe(1)
+  })
+
   it('publishing tenant B leaves tenant A byte-for-byte unchanged', async () => {
     const a = await createTenant({ slug: 'pub-alpha' })
     const day = await localDay(a.timezone, 3)
