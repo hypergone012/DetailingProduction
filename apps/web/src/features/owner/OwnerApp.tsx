@@ -1,6 +1,6 @@
 import { RefreshCw } from 'lucide-react'
-import { lazy, Suspense, useEffect, useMemo } from 'react'
-import { Navigate, Route, Routes } from 'react-router'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router'
 import { StatusScreen } from '@/app/StatusScreen'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -25,6 +25,7 @@ const load = {
   schedule: () => import('./schedule/ScheduleScreen'),
   settings: () => import('./settings/SettingsScreen'),
   sheets: () => import('./calendar/OwnerSheets'),
+  assistant: () => import('./assistant/OwnerAssistant'),
 }
 const TodayScreen = lazy(() => load.today().then((m) => ({ default: m.TodayScreen })))
 const CalendarScreen = lazy(() => load.calendar().then((m) => ({ default: m.CalendarScreen })))
@@ -34,6 +35,7 @@ const ServicesScreen = lazy(() => load.services().then((m) => ({ default: m.Serv
 const ScheduleScreen = lazy(() => load.schedule().then((m) => ({ default: m.ScheduleScreen })))
 const SettingsScreen = lazy(() => load.settings().then((m) => ({ default: m.SettingsScreen })))
 const OwnerSheets = lazy(() => load.sheets().then((m) => ({ default: m.OwnerSheets })))
+const OwnerAssistant = lazy(() => load.assistant().then((m) => ({ default: m.OwnerAssistant })))
 
 /** Owner cabinet of one studio: /s/:slug/owner/* (Supabase Auth, studio membership required). */
 export function OwnerApp() {
@@ -109,6 +111,20 @@ function usePrefetch() {
   }, [])
 }
 
+/** Loaded on the first ?chat=1 and kept mounted (close animation, follow-up actions). */
+function AssistantMount() {
+  const { data } = useTenant()
+  const location = useLocation()
+  const [loaded, setLoaded] = useState(false)
+  if (!loaded && new URLSearchParams(location.search).get('chat') === '1') setLoaded(true)
+  if (!loaded || data.features.ai === false) return null
+  return (
+    <Suspense fallback={null}>
+      <OwnerAssistant />
+    </Suspense>
+  )
+}
+
 function OwnerShell() {
   usePrefetch()
   const { slug } = useTenant()
@@ -132,6 +148,7 @@ function OwnerShell() {
       <Suspense fallback={null}>
         <OwnerSheets />
       </Suspense>
+      <AssistantMount />
     </>
   )
 }

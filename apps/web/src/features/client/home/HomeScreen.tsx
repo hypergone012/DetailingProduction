@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, CalendarClock, ChevronRight, Clock, MapPin, Phone, Sparkles } from 'lucide-react'
+import { ArrowRight, Bot, CalendarClock, ChevronRight, Clock, MapPin, Phone, Sparkles } from 'lucide-react'
 import { Link } from 'react-router'
 import { Img } from '@/components/Img'
 import { Badge } from '@/components/ui/badge'
@@ -9,6 +9,7 @@ import { duration, money, phonePretty, today, when } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Stagger, StaggerItem } from '@/motion/Stagger'
 import { useTenant } from '@/tenant/TenantProvider'
+import { useChatParam } from '@/components/assistant/chatParam'
 import { useBookingFlow } from '../booking/flow'
 import { hasPriceRange, isUpcoming, keys, minPrice, useProfile } from '../data'
 import { suggestionText } from '../garage/suggestions'
@@ -24,6 +25,7 @@ export function HomeScreen() {
       <StudioHero />
       <div className="grid gap-6 px-4">
         <BookNowCard />
+        {data.features.ai !== false && <AssistantCard />}
         <UpcomingBooking />
         <GarageGlance />
         <PopularServices />
@@ -61,6 +63,26 @@ function StudioHero() {
         </p>
       </div>
     </header>
+  )
+}
+
+function AssistantCard() {
+  const chat = useChatParam()
+  return (
+    <button
+      type="button"
+      onClick={chat.show}
+      className="pressable flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 text-left shadow-card outline-none focus-visible:ring-2 focus-visible:ring-focus"
+    >
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-subtle text-accent-text">
+        <Bot className="size-5" aria-hidden />
+      </span>
+      <span className="grid flex-1 gap-0.5">
+        <span className="font-semibold">Спросить помощника</span>
+        <span className="text-sm text-fg-muted">Цены, свободное время и запись — в чате</span>
+      </span>
+      <ChevronRight className="size-4 text-fg-subtle" aria-hidden />
+    </button>
   )
 }
 

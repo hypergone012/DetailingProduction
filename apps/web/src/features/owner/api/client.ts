@@ -61,12 +61,17 @@ export async function rows<T>(query: PromiseLike<{ data: unknown; error: DbError
   return (data ?? []) as T[]
 }
 
-/** Edge Function call authorised as the signed-in user (owner-api). */
-export async function ownerFunction<T>(path: string, o: RequestOptions = {}): Promise<T> {
+/** Edge Function call authorised as the signed-in user. */
+export async function authedFunction<T>(path: string, o: RequestOptions = {}): Promise<T> {
   const { data } = await supabase().auth.getSession()
   const token = data.session?.access_token
   if (!token) throw new ApiError('UNAUTHENTICATED', 'Сессия истекла — войдите снова', 401)
-  return callFunction<T>(`/owner-api${path}`, { ...o, headers: { ...o.headers, authorization: `Bearer ${token}` } })
+  return callFunction<T>(path, { ...o, headers: { ...o.headers, authorization: `Bearer ${token}` } })
+}
+
+/** owner-api (actions that need a server secret, e.g. client share links). */
+export function ownerFunction<T>(path: string, o: RequestOptions = {}): Promise<T> {
+  return authedFunction<T>(`/owner-api${path}`, o)
 }
 
 /** E.164 from what the phone input shows ("+7 916 123-45-67" -> "+79161234567"). */

@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js'
 import { useQueryClient } from '@tanstack/react-query'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { session as sessionStore } from '@/lib/storage'
 import { clearPrivateCaches } from '@/pwa/register'
 import { supabase } from '../api/client'
 
@@ -46,6 +47,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     await supabase().auth.signOut({ scope: 'local' })
     // Nothing of the cabinet may survive on this device after logout.
     qc.removeQueries({ queryKey: ['owner'] })
+    sessionStore.clearMatching(':assistant:owner')
     clearPrivateCaches()
   }, [qc])
 

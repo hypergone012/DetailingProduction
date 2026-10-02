@@ -8,7 +8,7 @@ import { routeClientIntent, routeOwnerIntent, type ServiceRef } from '../_vendor
 import { addDaysIso } from '../_vendor/core/ai/dates.ts'
 import { BODY_TYPE_LABELS, type BodyType } from '../_vendor/core/tenant/constants.ts'
 import { execute, type Scope } from './executors.ts'
-import { formatMoney, labelWhen } from './format.ts'
+import { dayLabel, formatMoney } from './format.ts'
 
 const WEEKDAY = ['', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
@@ -41,14 +41,19 @@ async function clientAnswer(scope: Scope, text: string, today: string): Promise<
   switch (intent.type) {
     case 'book': {
       const service = data.services.find((s) => s.id === intent.serviceId)
-      if (!service) return answer(`На какую услугу записать?\n${servicesLine(scope)}`)
+      if (!service) {
+        return answer(
+          'На какую услугу записать?',
+          data.services.slice(0, 6).map((s) => ({ type: 'reply', label: s.name, text: `${s.name}, ${text}` })),
+        )
+      }
       const from = intent.day ?? today
       const out = await execute(scope, 'check_availability', { service_id: service.id, date: from, days: intent.day ? 1 : 3, body_type: intent.bodyType, part_of_day: intent.part })
       const r = out.result as { price: string; slots: { starts_at: string; label: string }[] }
       if (r.slots.length === 0) {
-        return answer(`На «${service.name}» ${intent.day ? `на ${labelWhen(`${from}T12:00:00Z`, data.tenant.timezone, 'date')}` : 'в ближайшие дни'} свободного времени нет${intent.part ? ' в это время суток' : ''}. Посмотрите другие даты в записи.`)
+        return answer(`На «${service.name}» ${intent.day ? `на ${dayLabel(from, data.tenant.timezone)}` : 'в ближайшие дни'} свободного времени нет${intent.part ? ' в это время суток' : ''}. Посмотрите другие даты в записи.`)
       }
-      const exact = intent.time ? r.slots.find((s) => labelWhen(s.starts_at, data.tenant.timezone, 'time') === intent.time) : undefined
+      const exact = intent.time ? r.slots.find((s) => s.label.endsWith(intent.time!)) : undefined
       const picks = exact ? [exact] : r.slots.slice(0, 4)
       const actions: AssistantAction[] = []
       for (const s of picks) {
@@ -115,8 +120,9 @@ async function ownerAnswer(scope: Scope, text: string, today: string): Promise<A
     case 'day_schedule': {
       const out = await execute(scope, 'day_schedule', { date: intent.day })
       const r = out.result as { open: boolean; items: { time: string; customer?: string; service?: string; resource?: string; block?: string }[] }
-      if (!r.items.length) return answer(`${intent.day}: ${r.open ? 'записей нет' : 'выходной по расписанию'}.`)
-      return answer(`${intent.day}:\n${r.items.map((i) => (i.customer ? `${i.time} ${i.customer} — ${i.service} (${i.resource})` : `${i.time} блокировка ${i.block} (${i.resource})`)).join('\n')}`, out.actions)
+      const title = dayLabel(intent.day, data.tenant.timezone)
+      if (!r.items.length) return answer(`${title}: ${r.open ? 'записей нет' : 'выходной по расписанию'}.`)
+      return answer(`${title}:\n${r.items.map((i) => (i.customer ? `${i.time} ${i.customer} — ${i.service} (${i.resource})` : `${i.time} блокировка ${i.block} (${i.resource})`)).join('\n')}`, out.actions)
     }
     case 'stats': {
       const from = addDaysIso(today, -(intent.days - 1))
@@ -135,10 +141,15 @@ async function ownerAnswer(scope: Scope, text: string, today: string): Promise<A
     }
     case 'free_slots': {
       const service = data.services.find((s) => s.id === intent.serviceId)
-      if (!service) return answer(`Для какой услуги искать время?\n${servicesLine(scope)}`)
+      if (!service) {
+        return answer(
+          'Для какой услуги искать время?',
+          data.services.slice(0, 6).map((s) => ({ type: 'reply', label: s.name, text: `${text} ${s.name}` })),
+        )
+      }
       const out = await execute(scope, 'check_availability', { service_id: service.id, date: intent.day, days: 1 })
       const r = out.result as { slots: { label: string }[] }
-      return answer(r.slots.length ? `«${service.name}», ${intent.day}: ${r.slots.slice(0, 12).map((s) => s.label.split(', ').pop()).join(', ')}` : `«${service.name}», ${intent.day}: свободного времени нет.`)
+      return answer(r.slots.length ? `«${service.name}», ${dayLabel(intent.day, data.tenant.timezone)}: ${r.slots.slice(0, 12).map((s) => s.label.split(', ').pop()).join(', ')}` : `«${service.name}», ${dayLabel(intent.day, data.tenant.timezone)}: свободного времени нет.`)
     }
     case 'pending': {
       const days = [0, 1, 2, 3, 4, 5, 6].map((d) => addDaysIso(today, d))
@@ -147,7 +158,7 @@ async function ownerAnswer(scope: Scope, text: string, today: string): Promise<A
       for (const d of days) {
         const out = await execute(scope, 'day_schedule', { date: d })
         const r = out.result as { items: { status?: string; time: string; customer?: string; service?: string }[] }
-        for (const i of r.items.filter((x) => x.status === 'pending')) lines.push(`${d} ${i.time} ${i.customer} — ${i.service}`)
+        for (const i of r.items.filter((x) => x.status === 'pending')) lines.push(`${dayLabel(d, data.tenant.timezone)} ${i.time} ${i.customer} — ${i.service}`)
         actions.push(...out.actions)
       }
       return answer(lines.length ? `Ждут подтверждения:\n${lines.join('\n')}` : 'Неподтверждённых записей на неделю нет.', lines.length ? actions.slice(0, 3) : [])

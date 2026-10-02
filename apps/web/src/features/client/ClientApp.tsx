@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect } from 'react'
-import { Navigate, Route, Routes } from 'react-router'
+import { lazy, Suspense, useEffect, useState } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MotionProvider } from '@/motion/MotionProvider'
 import { TenantHead } from '@/tenant/TenantHead'
@@ -22,6 +22,7 @@ const load = {
   token: () => import('./history/TokenLanding'),
   profile: () => import('./profile/ProfileScreen'),
   sheets: () => import('./booking/BookingSheets'),
+  assistant: () => import('./assistant/AssistantSheet'),
   update: () => import('./layout/UpdatePrompt'),
 }
 const ServicesScreen = lazy(() => load.services().then((m) => ({ default: m.ServicesScreen })))
@@ -34,6 +35,7 @@ const TokenLanding = lazy(() => load.token().then((m) => ({ default: m.TokenLand
 const ProfileScreen = lazy(() => load.profile().then((m) => ({ default: m.ProfileScreen })))
 const BookingSheets = lazy(() => load.sheets().then((m) => ({ default: m.BookingSheets })))
 const UpdatePrompt = lazy(() => load.update().then((m) => ({ default: m.UpdatePrompt })))
+const AssistantSheet = lazy(() => load.assistant().then((m) => ({ default: m.AssistantSheet })))
 
 function usePrefetch() {
   useEffect(() => {
@@ -59,6 +61,20 @@ function Sheets() {
   return (
     <Suspense fallback={null}>
       <BookingSheets />
+    </Suspense>
+  )
+}
+
+/** Loaded on the first ?chat=1 and kept mounted, so its close animation and follow-ups run. */
+function Assistant() {
+  const { data } = useTenant()
+  const location = useLocation()
+  const [loaded, setLoaded] = useState(false)
+  if (!loaded && new URLSearchParams(location.search).get('chat') === '1') setLoaded(true)
+  if (!loaded || data.features.ai === false) return null
+  return (
+    <Suspense fallback={null}>
+      <AssistantSheet />
     </Suspense>
   )
 }
@@ -92,6 +108,7 @@ export function ClientApp() {
           </div>
           <BottomNav />
           <Sheets />
+          <Assistant />
           <Suspense fallback={null}>
             <UpdatePrompt />
           </Suspense>

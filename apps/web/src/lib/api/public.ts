@@ -1,4 +1,5 @@
 import type { AvailabilityResponse, Bootstrap, BookingResponse, BookingView, CreateBookingRequest, CreateBookingResponse, ProfileView, VehicleInput } from '@dp/core/api/contracts'
+import type { ChatResponse } from '@dp/core/ai/tools'
 import { device } from '@/lib/device'
 import { callFunction } from './http'
 
@@ -68,6 +69,13 @@ export function publicApi(slug: string) {
         timeoutMs: 60_000,
       }),
     pushConfig: () => callFunction<{ enabled: boolean; vapid_public_key: string | null }>('/public-api/push/config'),
+    assistant: (messages: { role: 'user' | 'assistant'; text: string }[]) =>
+      callFunction<ChatResponse>(`/assistant/t/${encodeURIComponent(slug)}/chat`, {
+        method: 'POST',
+        json: { scope: 'client', messages },
+        headers: keyHeader(),
+        timeoutMs: 60_000,
+      }),
     pushSubscribe: (subscription: PushSubscriptionJSON, bookingId?: string) =>
       callFunction<{ ok: true }>(`${base}/push/subscribe`, {
         method: 'POST',

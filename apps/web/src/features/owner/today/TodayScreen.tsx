@@ -1,6 +1,7 @@
 import type { BookingStatus } from '@dp/core/api/contracts'
-import { AlertTriangle, CalendarPlus, ChevronRight, Clock } from 'lucide-react'
+import { AlertTriangle, Bot, CalendarPlus, ChevronRight, Clock } from 'lucide-react'
 import { Link } from 'react-router'
+import { useChatParam } from '@/components/assistant/chatParam'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Section } from '@/components/Section'
 import { StatusBadge } from '@/components/StatusBadge'
@@ -20,6 +21,7 @@ export function TodayScreen() {
   const { tz, locale, slug, canManage } = useOwner()
   const { data } = useTenant()
   const sheets = useSheets()
+  const chat = useChatParam()
   const day = today(tz)
   const cal = useCalendar(day, 1)
   const ahead = useCalendar(day, 14)
@@ -34,11 +36,18 @@ export function TodayScreen() {
         large
         wide
         actions={
-          canManage && (
-            <Button size="sm" onClick={() => sheets.open({ new: 'booking', day })}>
-              <CalendarPlus /> Запись
-            </Button>
-          )
+          <>
+            {data.features.ai !== false && (
+              <Button variant="ghost" size="icon" aria-label="Помощник" onClick={chat.show}>
+                <Bot />
+              </Button>
+            )}
+            {canManage && (
+              <Button size="sm" onClick={() => sheets.open({ new: 'booking', day })}>
+                <CalendarPlus /> Запись
+              </Button>
+            )}
+          </>
         }
       />
       <div className="mx-auto grid max-w-6xl gap-6 px-4 pb-8">

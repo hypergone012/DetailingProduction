@@ -54,6 +54,19 @@ export const storage = {
 }
 
 export const session = {
+  /** Removes every session key whose name contains `part` (e.g. a scope's chat history). */
+  clearMatching(part: string): void {
+    try {
+      const keys: string[] = []
+      for (let i = 0; i < window.sessionStorage.length; i++) {
+        const k = window.sessionStorage.key(i)
+        if (k?.startsWith(PREFIX) && k.includes(part)) keys.push(k)
+      }
+      for (const k of keys) window.sessionStorage.removeItem(k)
+    } catch {
+      /* ignore */
+    }
+  },
   get(key: string): string | null {
     try {
       return window.sessionStorage.getItem(PREFIX + key)

@@ -134,7 +134,7 @@ export async function execute(scope: Scope, name: ToolName, input: Record<string
       const { raw } = await availability(scope, { service_id: i.service_id, date: localDay, days: 1, body_type: i.body_type ?? null })
       const slot = raw.slots.find((s) => new Date(s.starts_at).getTime() === day.getTime())
       if (!slot) throw new HttpError('SLOT_UNAVAILABLE', 'Это время недоступно: выберите один из свободных слотов check_availability')
-      const label = `Записаться: ${service.name}, ${labelWhen(slot.starts_at, tz)} · ${formatMoney(raw.price_cents, currency)}`
+      const label = `${labelWhen(slot.starts_at, tz)} · ${formatMoney(raw.price_cents, currency)}`
       return ok(
         { shown_to_client: true, service: service.name, when: labelWhen(slot.starts_at, tz), price: formatMoney(raw.price_cents, currency), note: 'Клиент увидит кнопку и подтвердит запись сам' },
         [{ type: 'book', service_id: service.id, starts_at: slot.starts_at, body_type: i.body_type ?? null, label, price_cents: raw.price_cents }],

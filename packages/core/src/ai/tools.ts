@@ -154,6 +154,8 @@ export type AssistantAction =
   | { type: 'open_customer'; customer_id: string; label: string }
   | { type: 'open_url'; url: string; label: string }
   | { type: 'call'; phone: string; label: string }
+  /** A quick reply: the UI sends `text` as the person's next message. */
+  | { type: 'reply'; text: string; label: string }
 
 export const chatRequestSchema = z.strictObject({
   scope: z.enum(['client', 'owner']),

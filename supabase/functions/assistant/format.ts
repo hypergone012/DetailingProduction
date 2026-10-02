@@ -1,5 +1,5 @@
 /** Formatting in the STUDIO's timezone (the assistant speaks studio wall-clock time). */
-import { wallClock } from '../_vendor/core/time/zoned.ts'
+import { wallClock, zonedToInstant } from '../_vendor/core/time/zoned.ts'
 
 const cache = new Map<string, Intl.DateTimeFormat>()
 function dtf(tz: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
@@ -38,4 +38,9 @@ export function localMinutes(iso: string, tz: string): number {
 export function localToday(tz: string, now = new Date()): { day: string; time: string } {
   const w = wallClock(now, tz)
   return { day: w.day, time: w.time }
+}
+
+/** "сб, 3 октября" for a studio-local calendar day. */
+export function dayLabel(day: string, tz: string): string {
+  return dtf(tz, { weekday: 'short', day: 'numeric', month: 'long' }).format(zonedToInstant(day, '12:00', tz))
 }

@@ -25,6 +25,8 @@ export interface StartOptions {
   serviceId?: string
   vehicle?: VehicleChoice
   addonIds?: string[]
+  /** A concrete free slot (e.g. picked in the assistant chat). */
+  slot?: Slot
 }
 
 interface FlowValue {
@@ -74,16 +76,14 @@ export function BookingFlowProvider({ children }: { children: ReactNode }) {
     else storage.setJson(`${slug}:draft`, draft)
   }, [draft, slug])
 
-  const withStep = useCallback(
-    (s: Step | null) => {
-      const p = new URLSearchParams(location.search)
-      if (s) p.set(PARAM, s)
-      else p.delete(PARAM)
-      const q = p.toString()
-      return `${location.pathname}${q ? `?${q}` : ''}`
-    },
-    [location.pathname, location.search],
-  )
+  // Read the URL at call time: callbacks may run after a navigation (e.g. from the assistant).
+  const withStep = useCallback((s: Step | null) => {
+    const p = new URLSearchParams(window.location.search)
+    if (s) p.set(PARAM, s)
+    else p.delete(PARAM)
+    const q = p.toString()
+    return `${window.location.pathname}${q ? `?${q}` : ''}`
+  }, [])
 
   const go = useCallback((s: Step) => navigate(withStep(s)), [navigate, withStep])
 
@@ -118,10 +118,10 @@ export function BookingFlowProvider({ children }: { children: ReactNode }) {
 
   const start = useCallback(
     (o: StartOptions = {}) => {
-      setDraft({ ...EMPTY, serviceId: o.serviceId ?? null, vehicle: o.vehicle ?? null, addonIds: o.addonIds ?? [] })
+      setDraft({ ...EMPTY, serviceId: o.serviceId ?? null, vehicle: o.vehicle ?? null, addonIds: o.addonIds ?? [], slot: o.slot ?? null })
       startIdx.current = historyIdx()
       doneSeen.current = false
-      go(!o.serviceId ? 'service' : !o.vehicle ? 'vehicle' : 'slot')
+      go(!o.serviceId ? 'service' : !o.vehicle ? 'vehicle' : o.slot ? 'confirm' : 'slot')
     },
     [go],
   )

@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useLocation, useNavigate, useSearchParams } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 
 /**
  * Cabinet sheets live in the URL (?booking=<id>, ?new=booking&day=…), so they survive a
@@ -8,42 +8,47 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router'
  */
 const SHEET_KEYS = ['booking', 'block', 'new', 'day', 'time', 'resource', 'customer', 'move']
 
+/** React Router keeps navigation state in history.state.usr; read it at call time. */
+function routerState(): { sheetDepth?: number } | null {
+  return ((window.history.state as { usr?: { sheetDepth?: number } } | null)?.usr ?? null)
+}
+
 export function useSheets() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
-  const location = useLocation()
 
+  // URL and state are read at call time: an action may run after another navigation.
   const open = useCallback(
     (values: Record<string, string | null | undefined>) => {
-      const next = new URLSearchParams(location.search)
+      const next = new URLSearchParams(window.location.search)
       for (const k of SHEET_KEYS) next.delete(k)
       for (const [k, v] of Object.entries(values)) if (v) next.set(k, v)
-      const depth = ((location.state as { sheetDepth?: number } | null)?.sheetDepth ?? 0) + 1
-      navigate({ pathname: location.pathname, search: next.toString() }, { state: { sheetDepth: depth } })
+      const depth = (routerState()?.sheetDepth ?? 0) + 1
+      navigate({ pathname: window.location.pathname, search: next.toString() }, { state: { sheetDepth: depth } })
     },
-    [location.pathname, location.search, location.state, navigate],
+    [navigate],
   )
 
   const close = useCallback(() => {
-    const depth = (location.state as { sheetDepth?: number } | null)?.sheetDepth ?? 0
+    const depth = routerState()?.sheetDepth ?? 0
     if (depth > 0) {
       navigate(-depth)
       return
     }
-    const next = new URLSearchParams(location.search)
+    const next = new URLSearchParams(window.location.search)
     for (const k of SHEET_KEYS) next.delete(k)
-    navigate({ pathname: location.pathname, search: next.toString() }, { replace: true })
-  }, [location.pathname, location.search, location.state, navigate])
+    navigate({ pathname: window.location.pathname, search: next.toString() }, { replace: true })
+  }, [navigate])
 
   /** Replace the current sheet by another one (no extra history entry). */
   const replace = useCallback(
     (values: Record<string, string | null | undefined>) => {
-      const next = new URLSearchParams(location.search)
+      const next = new URLSearchParams(window.location.search)
       for (const k of SHEET_KEYS) next.delete(k)
       for (const [k, v] of Object.entries(values)) if (v) next.set(k, v)
-      navigate({ pathname: location.pathname, search: next.toString() }, { replace: true, state: location.state })
+      navigate({ pathname: window.location.pathname, search: next.toString() }, { replace: true, state: routerState() })
     },
-    [location.pathname, location.search, location.state, navigate],
+    [navigate],
   )
 
   return {

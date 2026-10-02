@@ -1,4 +1,4 @@
-import { storage } from '@/lib/storage'
+import { session, storage } from '@/lib/storage'
 
 /**
  * What this device knows about one studio:
@@ -33,5 +33,6 @@ export const device = {
   /** "Forget this device": everything this app stored for the studio, appearance excluded. */
   forget(slug: string): void {
     for (const name of ['client-key', 'tokens', 'contact', 'draft']) storage.remove(k(slug, name))
+    session.remove(k(slug, 'assistant:client'))
   },
 }
