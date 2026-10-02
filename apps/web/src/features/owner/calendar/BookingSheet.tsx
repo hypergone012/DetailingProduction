@@ -70,7 +70,7 @@ function BookingBody({ b }: { b: OwnerBooking }) {
         {setStatus.error && <p role="alert" className="text-sm text-danger">{errorMessage(setStatus.error)}</p>}
         {canManage || b.status !== 'pending' ? (
           <div className="flex flex-wrap gap-2 pt-1">
-            {nextActions(b.status).map((a) => (
+            {nextActions(b.status, b.starts_at).map((a) => (
               <Button key={a.status} size="sm" variant={a.primary ? 'primary' : 'secondary'} loading={setStatus.isPending && setStatus.variables === a.status} onClick={() => setStatus.mutate(a.status)}>
                 {a.label}
               </Button>

@@ -43,17 +43,27 @@ export interface StatusAction {
   primary?: boolean
 }
 
-/** The transitions private.transition_booking accepts, in the order a studio needs them. */
-export function nextActions(status: BookingStatus): StatusAction[] {
+/** Work statuses are accepted by SQL (private.transition_booking) only from 12 h before the start. */
+const WORK_STATUSES_FROM_MS = 12 * 3600_000
+
+/**
+ * The transitions private.transition_booking accepts, in the order a studio needs them.
+ * "Начать работу" / "Завершить" / "Не приехал" are not offered for a booking that is still
+ * more than 12 h away: the server would refuse them, so the buttons would be dead.
+ */
+export function nextActions(status: BookingStatus, startsAt: string, now = Date.now()): StatusAction[] {
+  const early = Date.parse(startsAt) > now + WORK_STATUSES_FROM_MS
   switch (status) {
     case 'pending':
       return [{ status: 'confirmed', label: 'Подтвердить', primary: true }]
     case 'confirmed':
-      return [
-        { status: 'in_progress', label: 'Начать работу', primary: true },
-        { status: 'completed', label: 'Завершить' },
-        { status: 'no_show', label: 'Не приехал' },
-      ]
+      return early
+        ? []
+        : [
+            { status: 'in_progress', label: 'Начать работу', primary: true },
+            { status: 'completed', label: 'Завершить' },
+            { status: 'no_show', label: 'Не приехал' },
+          ]
     case 'in_progress':
       return [{ status: 'completed', label: 'Завершить', primary: true }]
     default:

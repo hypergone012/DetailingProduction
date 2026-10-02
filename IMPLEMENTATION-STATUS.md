@@ -167,6 +167,7 @@ react 19.3 · vite 8.3 · react-router 8.4 · @tanstack/react-query 5.104 · zod
 | Гонка дневного бюджета ИИ: 8 из 24 параллельных запросов при лимите 5 | миграция `…015_ai_budget_lock` (advisory-lock на студию) + `tests/db/limits.test.ts` |
 | `tenant:shells` оставлял оболочку удалённой или переименованной студии | удаляет оболочки неопубликованных slug |
 | Цвет статусов на собственном фоне бейджа был ниже 4.5:1 в 5 из 7 тем | `buildTokens` подбирает цвет под каждый слой фона + тест |
+| Кнопки «Начать работу», «Завершить» и «Не приехал» для записи дальше 12 ч всегда получали отказ SQL | `nextActions` следует правилу `private.transition_booking` + `labels.test` |
 
 **Доступность (axe-core 4.13, 17 экранов × 2 студии)**
 
@@ -193,7 +194,7 @@ react 19.3 · vite 8.3 · react-router 8.4 · @tanstack/react-query 5.104 · zod
 | Команда | Результат |
 |---|---|
 | `typecheck`, `lint` | OK |
-| `pnpm test` | **73 passed** |
+| `pnpm test` | **75 passed** |
 | `pnpm test:db` | **78 passed** |
 | `pnpm test:api` | **23 passed** |
 | `functions:check` | OK |

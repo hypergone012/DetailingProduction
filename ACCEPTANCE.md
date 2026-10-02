@@ -19,7 +19,7 @@
 |---|---|
 | `pnpm typecheck` (TS strict, 4 проекта) | ✅ exit 0 |
 | `pnpm lint` | ✅ exit 0 |
-| `pnpm test` — unit | ✅ 73 passed (7 файлов) |
+| `pnpm test` — unit | ✅ 75 passed (8 файлов) |
 | `pnpm test:db` — SQL против настоящего Postgres 16 | ✅ 78 passed (8 файлов) |
 | `pnpm test:api` — HTTP: шлюз → Deno-функции → PostgREST → Postgres / GoTrue / Storage | ✅ 23 passed (3 файла) |
 | `pnpm functions:check` — `deno check` всех Edge Functions | ✅ exit 0 |
@@ -91,6 +91,7 @@
 | Не было landmark `<main>` | основной контент клиента и кабинета обёрнут в `<main>` | axe, Playwright |
 | После закрытия листа фокус уходил в `<body>` | `useReturnFocus` | клавиатурный скрипт |
 | `tenant:shells` оставлял в `dist` оболочку удалённой студии | удаляет оболочки неопубликованных slug | повторный `tenant:shells` после удаления |
+| Кабинет предлагал «Начать работу», «Завершить» и «Не приехал» для записи, до которой больше 12 ч: SQL всегда отвечал `TOO_EARLY` (мёртвые кнопки) | действия показываются по тому же правилу, что в SQL | `labels.test` (граница 12 ч), скриншот листа записи |
 
 ---
 

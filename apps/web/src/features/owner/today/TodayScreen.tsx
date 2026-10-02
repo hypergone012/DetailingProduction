@@ -101,7 +101,7 @@ function AgendaRow({ item, resource, showDay = false }: { item: CalendarItem; re
   const { tz, locale } = useOwner()
   const sheets = useSheets()
   const b = item.booking!
-  const action = nextActions(b.status).find((a) => a.primary)
+  const action = nextActions(b.status, b.starts_at).find((a) => a.primary)
   const set = useOwnerMutation((status: BookingStatus) => rpc('owner_set_booking_status', { p_booking: b.id, p_status: status }))
   return (
     <li className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-3">
