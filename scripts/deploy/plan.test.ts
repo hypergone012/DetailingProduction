@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { explainDbError, functionEnv, normalizeInputs, pickJwtKeys, pickPagesDomain, planSecrets, toDotenv, type Generators } from './plan.ts'
+import { encodeConnectionPassword, explainDbError, functionEnv, normalizeInputs, pickJwtKeys, pickPagesDomain, planSecrets, toDotenv, type Generators } from './plan.ts'
 
 const gen: Generators = {
   random: (n) => `r${n}`,
@@ -137,5 +137,35 @@ describe('database connection errors', () => {
     expect(r.problems).toEqual([])
     expect(r.warnings.join(' ')).toContain('eu-central-1.pooler.supabase.net:5432')
     expect(r.inputs.databaseUrl).toContain('pooler.supabase.net')
+  })
+})
+
+describe('connection string with special characters in the password', () => {
+  const base = (pw: string) => `postgresql://postgres.abcdefghijklmnopqrst:${pw}@aws-0-eu-central-1.pooler.supabase.com:5432/postgres`
+  it('finds the real host after the last @ and encodes the password', () => {
+    for (const pw of ['Xx@9y/Zz', 'a#b?c:d', 'p@ss/w:rd#1', 'simpleOnly123']) {
+      const fixed = encodeConnectionPassword(base(pw))
+      const u = new URL(fixed)
+      expect(u.hostname).toBe('aws-0-eu-central-1.pooler.supabase.com')
+      expect(u.port).toBe('5432')
+      expect(u.username).toBe('postgres.abcdefghijklmnopqrst')
+      expect(decodeURIComponent(u.password)).toBe(pw)
+    }
+    expect(encodeConnectionPassword(base('already%40encoded'))).toBe(base('already%40encoded'))
+  })
+
+  it('normalizeInputs accepts such a string and passes the encoded one on', () => {
+    const r = normalizeInputs({
+      accessToken: `sbp_${'test'.repeat(10)}`,
+      projectRef: 'abcdefghijklmnopqrst',
+      databaseUrl: base('Xx@9y/Zz'),
+      cfApiToken: 'AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-Ab',
+      cfAccountId: '0123456789abcdef0123456789abcdef',
+      demoPassword: 'demo-pass-2026',
+      pagesProject: 'detailing-studio',
+    })
+    expect(r.problems).toEqual([])
+    expect(r.warnings).toEqual([])
+    expect(r.inputs.databaseUrl).toBe(base(encodeURIComponent('Xx@9y/Zz')))
   })
 })

@@ -140,6 +140,19 @@ export interface Inputs {
   pagesProject: string
 }
 
+/**
+ * postgresql://USER:PASSWORD@HOST:PORT/DB with the password percent-encoded. Supabase shows
+ * the string with the raw password; a password with @ / : ? # would otherwise split the
+ * address in the wrong place (the host is whatever follows the *last* @).
+ */
+export function encodeConnectionPassword(conn: string): string {
+  const m = /^(postgres(?:ql)?:\/\/)([^:@/]*):(.*)@([^@]*)$/s.exec(conn)
+  if (!m) return conn
+  const [, scheme, user, password, rest] = m as unknown as [string, string, string, string, string]
+  const alreadyEncoded = !/[@/:?#[\]\s]/.test(password) && !/%(?![0-9a-f]{2})/i.test(password)
+  return alreadyEncoded ? conn : `${scheme}${user}:${encodeURIComponent(password)}@${rest}`
+}
+
 const clean = (v: string | undefined) => (v ?? '').trim().replace(/^["'«](.*)["'»]$/s, '$1').trim()
 
 /**
@@ -168,7 +181,7 @@ export function normalizeInputs(raw: RawInputs): { inputs: Inputs; problems: str
   else {
     let url: URL | null = null
     try {
-      url = new URL(v.databaseUrl.replace(/\s+/g, ''))
+      url = new URL(encodeConnectionPassword(v.databaseUrl.replace(/\s+/g, '')))
     } catch {
       problems.push('SUPABASE_DB_URL: строку не удалось разобрать. Скопируйте её заново (Connect → Session pooler); если в пароле базы есть символы @ : / ? # %, смените пароль на буквы и цифры (Project Settings → Database → Reset database password).')
     }
@@ -184,7 +197,7 @@ export function normalizeInputs(raw: RawInputs): { inputs: Inputs; problems: str
         // An unfamiliar host is not rejected (Supabase may change its pooler addresses): the
         // connection probe that follows tells whether it works. Host and port are not secret.
         if (!host.endsWith('.pooler.supabase.com')) warnings.push(`SUPABASE_DB_URL: необычный адрес базы «${host}:${url.port || '5432'}» — ожидался …pooler.supabase.com:5432 (Connect → Session pooler). Пробую подключиться.`)
-        databaseUrl = v.databaseUrl.replace(/\s+/g, '')
+        databaseUrl = encodeConnectionPassword(v.databaseUrl.replace(/\s+/g, ''))
       }
     }
   }
