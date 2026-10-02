@@ -19,7 +19,7 @@
 |---|---|
 | `pnpm typecheck` (TS strict, 4 проекта) | ✅ exit 0 |
 | `pnpm lint` | ✅ exit 0 |
-| `pnpm test` — unit | ✅ 82 passed (11 файлов) |
+| `pnpm test` — unit | ✅ 82 passed (10 файлов) |
 | `pnpm test:db` — SQL против настоящего Postgres 16 | ✅ 78 passed (8 файлов) |
 | `pnpm test:api` — HTTP: шлюз → Deno-функции → PostgREST → Postgres / GoTrue / Storage | ✅ 23 passed (3 файла) |
 | `pnpm functions:check` — `deno check` всех Edge Functions | ✅ exit 0 |
