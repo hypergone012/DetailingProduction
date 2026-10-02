@@ -5,7 +5,7 @@ import { useTenant } from '@/tenant/TenantProvider'
 import { CalendarButton } from '../../shared/CalendarButton'
 import { PushCard } from '../../profile/PushCard'
 import { useBookingFlow } from '../flow'
-import { SheetFrame } from './SheetFrame'
+import { SheetFrame } from '@/components/SheetFrame'
 
 export function DoneStep() {
   const { slug, tz, locale } = useTenant()

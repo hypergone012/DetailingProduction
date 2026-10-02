@@ -12,9 +12,9 @@ import { actionKey, completeAction } from '@/lib/idempotency'
 import { isValidPhone } from '@/lib/phone'
 import { useTenant } from '@/tenant/TenantProvider'
 import { priceFor, useInvalidateClient, useProfile } from '../../data'
-import { PhoneInput } from '../../shared/PhoneInput'
+import { PhoneInput } from '@/components/PhoneInput'
 import { useBookingFlow } from '../flow'
-import { SheetFrame } from './SheetFrame'
+import { SheetFrame } from '@/components/SheetFrame'
 
 const SLOT_GONE = new Set(['SLOT_UNAVAILABLE', 'TOO_SOON', 'TOO_FAR', 'OUTSIDE_WORKING_HOURS'])
 

@@ -12,9 +12,9 @@ import { useTenant } from '@/tenant/TenantProvider'
 import { useBookingFlow } from '../booking/flow'
 import { hasPriceRange, isUpcoming, keys, minPrice, useProfile } from '../data'
 import { suggestionText } from '../garage/suggestions'
-import { Card, Section } from '../shared/Section'
-import { StatusBadge } from '../shared/StatusBadge'
-import { VehicleGlyph } from '../shared/VehicleGlyph'
+import { Card, Section } from '@/components/Section'
+import { StatusBadge } from '@/components/StatusBadge'
+import { VehicleGlyph } from '@/components/VehicleGlyph'
 import { WEEKDAY_NAMES, openStatus } from '../shared/hours'
 
 export function HomeScreen() {

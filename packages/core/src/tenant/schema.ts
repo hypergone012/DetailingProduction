@@ -1,6 +1,7 @@
 import { z } from 'zod'
-import { contrast, isHarsh, isHex } from '../theme/color.ts'
-import { THEME_PRESET_IDS, THEME_PRESETS, resolveTheme } from '../theme/presets.ts'
+import { accentIssues } from '../theme/accent.ts'
+import { isHex } from '../theme/color.ts'
+import { THEME_PRESET_IDS } from '../theme/presets.ts'
 
 /**
  * business.json — the input of the tenant pipeline (tenants/<slug>/business.json).
@@ -191,11 +192,7 @@ export const businessSchema = z
     })
 
     if (b.branding.accent) {
-      if (isHarsh(b.branding.accent)) issue(['branding', 'accent'], 'слишком кислотный цвет: выберите глубокий или приглушённый оттенок')
-      const t = resolveTheme(b.branding.themePreset, b.branding.accent)
-      if (contrast(t.accentContrast, t.accent) < 4.5) issue(['branding', 'accent'], 'недостаточный контраст текста на акцентном цвете')
-      if (contrast(b.branding.accent, THEME_PRESETS[b.branding.themePreset].tokens.bg) < 1.6)
-        issue(['branding', 'accent'], 'акцент почти не отличается от фона темы')
+      for (const message of accentIssues(b.branding.themePreset, b.branding.accent)) issue(['branding', 'accent'], message)
     }
 
     if (b.status === 'live') {

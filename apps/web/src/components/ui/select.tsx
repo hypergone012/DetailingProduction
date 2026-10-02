@@ -26,9 +26,18 @@ export function SelectTrigger({ className, children, ...props }: ComponentProps<
   )
 }
 
+/**
+ * Sheets are native modal <dialog>s in the top layer: a popup portalled to <body> would sit
+ * underneath and be inert. Portal into the topmost open dialog when there is one.
+ */
+function topDialog(): HTMLElement | undefined {
+  if (typeof document === 'undefined') return undefined
+  return [...document.querySelectorAll<HTMLDialogElement>('dialog[open]')].at(-1)
+}
+
 export function SelectContent({ className, children, position = 'popper', ...props }: ComponentProps<typeof SelectPrimitive.Content>) {
   return (
-    <SelectPrimitive.Portal>
+    <SelectPrimitive.Portal container={topDialog()}>
       <SelectPrimitive.Content
         data-slot="select-content"
         position={position}

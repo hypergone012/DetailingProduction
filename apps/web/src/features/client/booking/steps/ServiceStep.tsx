@@ -4,7 +4,7 @@ import { duration, money } from '@/lib/format'
 import { useTenant } from '@/tenant/TenantProvider'
 import { hasPriceRange, minPrice } from '../../data'
 import { useBookingFlow } from '../flow'
-import { SheetFrame } from './SheetFrame'
+import { SheetFrame } from '@/components/SheetFrame'
 
 export function ServiceStep() {
   const { data, currency, locale, mediaFor } = useTenant()

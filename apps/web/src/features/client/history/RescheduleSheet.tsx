@@ -7,7 +7,7 @@ import { dateLong, span } from '@/lib/format'
 import { actionKey, completeAction } from '@/lib/idempotency'
 import { useTenant } from '@/tenant/TenantProvider'
 import { SlotPicker } from '../booking/SlotPicker'
-import { SheetFrame } from '../booking/steps/SheetFrame'
+import { SheetFrame } from '@/components/SheetFrame'
 import { useInvalidateClient } from '../data'
 
 /** Moving a booking: the server swaps the occupancy atomically; on failure the original stays. */

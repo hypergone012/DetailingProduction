@@ -6,10 +6,10 @@ import { duration, money } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useTenant } from '@/tenant/TenantProvider'
 import { priceFor, useProfile } from '../../data'
-import { VehicleForm } from '../../garage/VehicleForm'
-import { VehicleGlyph } from '../../shared/VehicleGlyph'
+import { VehicleForm } from '@/components/VehicleForm'
+import { VehicleGlyph } from '@/components/VehicleGlyph'
 import { useBookingFlow, type VehicleChoice } from '../flow'
-import { SheetFrame } from './SheetFrame'
+import { SheetFrame } from '@/components/SheetFrame'
 
 export function VehicleStep() {
   const { service, currency, locale } = useTenant()

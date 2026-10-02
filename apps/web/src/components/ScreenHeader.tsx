@@ -8,7 +8,20 @@ import { cn } from '@/lib/utils'
  * Sticky screen header. "Back" follows browser history when this screen was reached inside
  * the app, and goes to the logical parent otherwise (deep link), so Back is predictable.
  */
-export function ScreenHeader({ title, parent, actions, large = false }: { title: string; parent?: string; actions?: ReactNode; large?: boolean }) {
+export function ScreenHeader({
+  title,
+  parent,
+  actions,
+  large = false,
+  wide = false,
+}: {
+  title: string
+  parent?: string
+  actions?: ReactNode
+  large?: boolean
+  /** Full content width (owner cabinet) instead of the phone column. */
+  wide?: boolean
+}) {
   const navigate = useNavigate()
   const [scrolled, setScrolled] = useState(false)
   useEffect(() => {
@@ -27,7 +40,7 @@ export function ScreenHeader({ title, parent, actions, large = false }: { title:
       className={cn('sticky top-0 z-30 border-b bg-bg/95 backdrop-blur-sm transition-colors', scrolled ? 'border-line' : 'border-transparent')}
       style={{ paddingTop: 'var(--dp-safe-top)' }}
     >
-      <div className="mx-auto flex h-14 max-w-xl items-center gap-1 px-2">
+      <div className={cn('mx-auto flex h-14 items-center gap-1 px-2', wide ? 'max-w-6xl' : 'max-w-xl')}>
         {parent ? (
           <Button variant="ghost" size="icon" onClick={back} aria-label="Назад">
             <ChevronLeft />

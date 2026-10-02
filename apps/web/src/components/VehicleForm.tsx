@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field, Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { BodyTypePicker } from '../shared/BodyTypePicker'
+import { BodyTypePicker } from '@/components/BodyTypePicker'
 
 const MAKES = ['Audi', 'BMW', 'Chery', 'Exeed', 'Geely', 'Haval', 'Honda', 'Hyundai', 'Infiniti', 'Kia', 'Land Rover', 'Lexus', 'Lada', 'Mazda', 'Mercedes-Benz', 'Mitsubishi', 'Nissan', 'Porsche', 'Renault', 'Skoda', 'Tank', 'Tesla', 'Toyota', 'Volkswagen', 'Volvo', 'Zeekr']
 

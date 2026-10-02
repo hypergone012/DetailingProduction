@@ -10,12 +10,12 @@ import { errorMessage } from '@/lib/api/http'
 import { when } from '@/lib/format'
 import { Stagger, StaggerItem } from '@/motion/Stagger'
 import { useTenant } from '@/tenant/TenantProvider'
-import { ScreenHeader } from '../layout/ScreenHeader'
+import { ScreenHeader } from '@/components/ScreenHeader'
 import { isUpcoming, useProfile, useSaveVehicle } from '../data'
-import { EmptyState } from '../shared/Section'
-import { VehicleGlyph } from '../shared/VehicleGlyph'
-import { SheetFrame } from '../booking/steps/SheetFrame'
-import { VehicleForm } from './VehicleForm'
+import { EmptyState } from '@/components/Section'
+import { VehicleGlyph } from '@/components/VehicleGlyph'
+import { SheetFrame } from '@/components/SheetFrame'
+import { VehicleForm } from '@/components/VehicleForm'
 
 export function GarageScreen() {
   const { slug, tz, locale } = useTenant()

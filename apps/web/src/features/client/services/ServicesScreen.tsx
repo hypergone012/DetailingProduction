@@ -6,7 +6,7 @@ import { duration, money } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Stagger, StaggerItem } from '@/motion/Stagger'
 import { useTenant } from '@/tenant/TenantProvider'
-import { ScreenHeader } from '../layout/ScreenHeader'
+import { ScreenHeader } from '@/components/ScreenHeader'
 import { hasPriceRange, minPrice } from '../data'
 
 const CATEGORY_LABELS: Record<string, string> = {

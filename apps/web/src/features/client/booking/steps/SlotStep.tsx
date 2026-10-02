@@ -5,7 +5,7 @@ import { dateLong, duration, money, span } from '@/lib/format'
 import { useTenant } from '@/tenant/TenantProvider'
 import { useBookingFlow } from '../flow'
 import { SlotPicker } from '../SlotPicker'
-import { SheetFrame } from './SheetFrame'
+import { SheetFrame } from '@/components/SheetFrame'
 
 export function SlotStep() {
   const { service, tz, currency, locale } = useTenant()

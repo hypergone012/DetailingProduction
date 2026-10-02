@@ -7,9 +7,9 @@ import { duration, money } from '@/lib/format'
 import { useTenant } from '@/tenant/TenantProvider'
 import { StatusScreen } from '@/app/StatusScreen'
 import { useBookingFlow } from '../booking/flow'
-import { ScreenHeader } from '../layout/ScreenHeader'
+import { ScreenHeader } from '@/components/ScreenHeader'
 import { hasPriceRange, minPrice, priceFor, useProfile } from '../data'
-import { Card, Section } from '../shared/Section'
+import { Card, Section } from '@/components/Section'
 
 export function ServiceDetailScreen() {
   const { id } = useParams()

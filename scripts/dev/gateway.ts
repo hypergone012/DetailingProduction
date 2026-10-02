@@ -53,7 +53,8 @@ const projectKeys = new Set([keys.anonKey, keys.serviceRoleKey])
 
 const CORS = {
   'access-control-allow-origin': '*',
-  'access-control-allow-headers': 'authorization, x-client-info, apikey, content-type, x-upsert, range, prefer, accept-profile, content-profile, idempotency-key',
+  'access-control-allow-headers':
+    'authorization, x-client-info, x-supabase-api-version, apikey, content-type, x-upsert, range, prefer, accept-profile, content-profile, idempotency-key',
   'access-control-allow-methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD',
   'access-control-expose-headers': 'content-range, content-length, etag',
 }
@@ -81,7 +82,11 @@ function withCors(res: Response): Response {
 }
 
 async function proxy(req: Request, prefix: string, upstream: string): Promise<Response> {
-  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
+  if (req.method === 'OPTIONS') {
+    // Like the hosted gateway, platform APIs accept whatever headers the client libraries send.
+    const requested = req.headers.get('access-control-request-headers')
+    return new Response(null, { status: 204, headers: { ...CORS, ...(requested ? { 'access-control-allow-headers': requested } : {}), 'access-control-max-age': '3600' } })
+  }
   const apikey = req.headers.get('apikey') ?? new URL(req.url).searchParams.get('apikey')
   // Like the hosted gateway: public objects and signed URLs need no project key.
   const openPath = /^\/storage\/v1\/(object|render\/image)\/(public|sign)\//.test(new URL(req.url).pathname) && (req.method === 'GET' || req.method === 'HEAD')

@@ -9,10 +9,10 @@ import { storage } from '@/lib/storage'
 import { Stagger, StaggerItem } from '@/motion/Stagger'
 import { useTenant } from '@/tenant/TenantProvider'
 import { useBookingFlow } from '../booking/flow'
-import { ScreenHeader } from '../layout/ScreenHeader'
+import { ScreenHeader } from '@/components/ScreenHeader'
 import { isUpcoming, keys, useProfile } from '../data'
-import { EmptyState, Section } from '../shared/Section'
-import { StatusBadge } from '../shared/StatusBadge'
+import { EmptyState, Section } from '@/components/Section'
+import { StatusBadge } from '@/components/StatusBadge'
 
 export function HistoryScreen() {
   const { slug, api } = useTenant()

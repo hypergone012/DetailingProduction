@@ -188,3 +188,13 @@ html[data-motion='reduce'] *::after {
   animation-duration: 0.001ms !important;
   transition-duration: 0.001ms !important;
 }
+
+/* Owner calendar: time outside working windows, and manual blocks. */
+.dp-closed {
+  background-color: color-mix(in oklab, var(--dp-sunken) 75%, transparent);
+  background-image: repeating-linear-gradient(135deg, transparent 0 7px, color-mix(in oklab, var(--dp-text) 4%, transparent) 7px 8px);
+}
+.dp-hatched {
+  background-color: var(--dp-surface-2);
+  background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in oklab, var(--dp-text) 7%, transparent) 6px 8px);
+}
