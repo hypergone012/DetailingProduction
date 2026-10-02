@@ -25,7 +25,7 @@ export interface PublishReport {
   deleted: string[]
   unchanged: number
   images: { uploaded: number; existing: number }
-  owners: { email: string; created: boolean; link?: string }[]
+  owners: { email: string; created: boolean; link?: string; passwordReset?: boolean }[]
   seed: unknown
   configHash: string
 }
@@ -38,6 +38,7 @@ async function resolveMembers(env: Env, t: LoadedTenant, o: PublishOptions) {
     const demo = b.status === 'demo' && o.demoOwnerPassword
     let user = await findUserByEmail(env, owner.email)
     let created = false
+    let passwordReset = false
     if (!user) {
       if (o.dryRun) {
         owners.push({ email: owner.email, created: true })
@@ -47,6 +48,7 @@ async function resolveMembers(env: Env, t: LoadedTenant, o: PublishOptions) {
       created = true
     } else if (demo && o.resetDemoPassword && !o.dryRun) {
       await setPassword(env, user.id, o.demoOwnerPassword!)
+      passwordReset = true
     }
     let link: string | undefined
     if (!demo && created && !o.dryRun) {
@@ -54,7 +56,7 @@ async function resolveMembers(env: Env, t: LoadedTenant, o: PublishOptions) {
       link = await recoveryLink(env, owner.email, `${env.appUrl}/s/${b.slug}/owner/`)
     }
     members.push({ user_id: user.id, role: owner.role })
-    owners.push({ email: owner.email, created, link })
+    owners.push({ email: owner.email, created, link, passwordReset })
   }
   return { members, owners }
 }

@@ -15,6 +15,11 @@ on:
         description: 'Свой домен, если уже подключён к проекту Pages (например https://app.example.ru). Пусто — адрес pages.dev.'
         required: false
         default: ''
+      reset_owner_password:
+        description: 'Сбросить пароль входа в кабинет демо-студий на текущее значение секрета DEMO_OWNER_PASSWORD (если пароль забыт)'
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: deploy
@@ -90,7 +95,13 @@ jobs:
         run: pnpm -s deploy:step auth
 
       - name: Студии — публикация
-        run: pnpm -s tenant:publish --all
+        shell: bash
+        env:
+          RESET_OWNER_PASSWORD: ${{ inputs.reset_owner_password }}
+        run: |
+          args=(--all)
+          [ "$RESET_OWNER_PASSWORD" = "true" ] && args+=(--reset-demo-password)
+          pnpm -s tenant:publish "${args[@]}"
 
       - name: Сайт — сборка
         shell: bash
