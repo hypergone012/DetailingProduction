@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { functionEnv, pickJwtKeys, pickPagesDomain, planSecrets, toDotenv, type Generators } from './plan.ts'
+import { functionEnv, normalizeInputs, pickJwtKeys, pickPagesDomain, planSecrets, toDotenv, type Generators } from './plan.ts'
 
 const gen: Generators = {
   random: (n) => `r${n}`,
@@ -51,5 +51,63 @@ describe('deploy plan', () => {
     ]
     expect(pickPagesDomain(list, 'detailing-studio')).toBe('detailing-studio-1x2.pages.dev')
     expect(() => pickPagesDomain(list, 'missing')).toThrow(/не найден/)
+  })
+})
+
+describe('repository secrets as people paste them', () => {
+  const ref = 'abcdefghijklmnopqrst'
+  const acc = '0123456789abcdef0123456789abcdef'
+  const good = {
+    accessToken: `sbp_${'test'.repeat(10)}`, // not a real token's shape (push protection)
+    projectRef: ref,
+    databaseUrl: `postgresql://postgres.${ref}:Kq7mP2x9Lw4nZ8vB@aws-0-eu-central-1.pooler.supabase.com:5432/postgres`,
+    cfApiToken: 'AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-Ab',
+    cfAccountId: acc,
+    demoPassword: 'demo-pass-2026',
+    llmApiKey: '',
+    pagesProject: 'detailing-studio',
+  }
+
+  it('accepts correct values as they are', () => {
+    expect(normalizeInputs(good)).toEqual({ inputs: good, problems: [] })
+  })
+
+  it('repairs the usual copy-paste slips: whole dashboard addresses, spaces, line breaks, quotes', () => {
+    const { inputs, problems } = normalizeInputs({
+      ...good,
+      cfAccountId: ` https://dash.cloudflare.com/${acc.toUpperCase()}/home \n`,
+      projectRef: `https://supabase.com/dashboard/project/${ref}/settings/general`,
+      databaseUrl: `"${good.databaseUrl}"\n`,
+      cfApiToken: `${good.cfApiToken}\n`,
+    })
+    expect(problems).toEqual([])
+    expect(inputs).toMatchObject({ cfAccountId: acc, projectRef: ref, databaseUrl: good.databaseUrl, cfApiToken: good.cfApiToken })
+    expect(normalizeInputs({ ...good, projectRef: `https://${ref}.supabase.co` }).inputs.projectRef).toBe(ref)
+  })
+
+  it('explains what is wrong without printing the secret', () => {
+    const cases: [Partial<typeof good>, RegExp][] = [
+      [{ cfAccountId: 'me@example.com' }, /CLOUDFLARE_ACCOUNT_ID.*почта/],
+      [{ cfAccountId: good.cfApiToken }, /CLOUDFLARE_ACCOUNT_ID.*API-токен/],
+      [{ cfApiToken: acc }, /CLOUDFLARE_API_TOKEN.*Account ID/],
+      [{ databaseUrl: good.databaseUrl.replace('Kq7mP2x9Lw4nZ8vB', '[YOUR-PASSWORD]') }, /\[YOUR-PASSWORD\]/],
+      [{ databaseUrl: `postgresql://postgres:pw@db.${ref}.supabase.co:5432/postgres` }, /Direct connection/],
+      [{ databaseUrl: good.databaseUrl.replace(':5432', ':6543') }, /Transaction pooler/],
+      [{ databaseUrl: good.databaseUrl.replace(ref, 'zyxwvutsrqponmlkjihg') }, /другого проекта/],
+      [{ accessToken: 'eyJhbGciOiJIUzI1NiJ9.x.y' }, /sbp_/],
+      [{ projectRef: 'detailing' }, /20 строчных/],
+      [{ demoPassword: '123' }, /не короче 8/],
+      [{ pagesProject: 'My Studio' }, /строчная латиница/],
+    ]
+    for (const [patch, re] of cases) {
+      const { problems } = normalizeInputs({ ...good, ...patch })
+      expect(problems.join(' | '), JSON.stringify(Object.keys(patch))).toMatch(re)
+      for (const value of Object.values(patch)) if (value.length > 12) expect(problems.join(' ')).not.toContain(value)
+    }
+  })
+
+  it('reports every missing secret at once', () => {
+    const { problems } = normalizeInputs({ pagesProject: 'detailing-studio' })
+    expect(problems.filter((p) => p.startsWith('Не задан секрет'))).toHaveLength(6)
   })
 })

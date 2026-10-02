@@ -117,3 +117,96 @@ export function pickPagesDomain(json: unknown, project: string): string {
   if (!domain) throw new Error(`Проект Cloudflare Pages «${project}» не найден или у него нет адреса *.pages.dev`)
   return domain
 }
+
+export interface RawInputs {
+  accessToken?: string
+  projectRef?: string
+  databaseUrl?: string
+  cfApiToken?: string
+  cfAccountId?: string
+  demoPassword?: string
+  llmApiKey?: string
+  pagesProject?: string
+}
+
+export interface Inputs {
+  accessToken: string
+  projectRef: string
+  databaseUrl: string
+  cfApiToken: string
+  cfAccountId: string
+  demoPassword: string
+  llmApiKey: string
+  pagesProject: string
+}
+
+const clean = (v: string | undefined) => (v ?? '').trim().replace(/^["'«](.*)["'»]$/s, '$1').trim()
+
+/**
+ * Repository secrets as people paste them -> exact values, or every problem at once in plain
+ * Russian. Tolerates the usual copy-paste slips (the whole dashboard address instead of the id,
+ * spaces, line breaks, quotes); never echoes a secret value, only its shape.
+ */
+export function normalizeInputs(raw: RawInputs): { inputs: Inputs; problems: string[] } {
+  const problems: string[] = []
+  const v = Object.fromEntries(Object.entries(raw).map(([k, x]) => [k, clean(x)])) as Record<keyof RawInputs, string>
+
+  // Supabase project ref: 20 lowercase letters, or a dashboard / API address that contains it.
+  const ref = /^[a-z]{20}$/.exec(v.projectRef)?.[0] ?? /project\/([a-z]{20})(?![a-z])/.exec(v.projectRef)?.[1] ?? /(?<![a-z])([a-z]{20})\.supabase\.co/.exec(v.projectRef)?.[1] ?? ''
+  if (!v.projectRef) problems.push('Не задан секрет SUPABASE_PROJECT_REF.')
+  else if (!ref) problems.push(`SUPABASE_PROJECT_REF: нужен Project ref — 20 строчных латинских букв из адреса supabase.com/dashboard/project/<ref>. Сейчас длина значения: ${v.projectRef.length}.`)
+
+  // Access token of the Supabase account (not a project API key, not the database password).
+  if (!v.accessToken) problems.push('Не задан секрет SUPABASE_ACCESS_TOKEN.')
+  else if (!/^sbp_[A-Za-z0-9_]+$/.test(v.accessToken)) problems.push('SUPABASE_ACCESS_TOKEN: токен должен начинаться с «sbp_» (Supabase → аватар → Account preferences → Access Tokens). Ключи anon / service_role и пароль базы сюда не подходят.')
+
+  // Session pooler connection string with the password filled in.
+  let databaseUrl = ''
+  if (!v.databaseUrl) problems.push('Не задан секрет SUPABASE_DB_URL.')
+  else if (v.databaseUrl.includes('[YOUR-PASSWORD]')) problems.push('SUPABASE_DB_URL: в строке остался шаблон [YOUR-PASSWORD] — замените его (вместе со скобками) на пароль базы.')
+  else {
+    let url: URL | null = null
+    try {
+      url = new URL(v.databaseUrl.replace(/\s+/g, ''))
+    } catch {
+      problems.push('SUPABASE_DB_URL: строку не удалось разобрать. Скопируйте её заново (Connect → Session pooler); если в пароле базы есть символы @ : / ? # %, смените пароль на буквы и цифры (Project Settings → Database → Reset database password).')
+    }
+    if (url) {
+      const host = url.hostname
+      if (!/^postgres(ql)?:$/.test(url.protocol)) problems.push('SUPABASE_DB_URL: строка должна начинаться с postgresql:// (Connect → Connection String → Session pooler).')
+      else if (/^db\..+\.supabase\.co$/.test(host)) problems.push('SUPABASE_DB_URL: это строка «Direct connection». Нужна строка из блока «Session pooler» (Connect → Session pooler), в ней адрес …pooler.supabase.com:5432.')
+      else if (!host.endsWith('.pooler.supabase.com')) problems.push('SUPABASE_DB_URL: адрес базы должен заканчиваться на pooler.supabase.com (Connect → Session pooler).')
+      else if (url.port === '6543') problems.push('SUPABASE_DB_URL: это «Transaction pooler» (порт 6543). Нужен «Session pooler» — порт 5432.')
+      else if (!url.password) problems.push('SUPABASE_DB_URL: в строке нет пароля — после «postgres.<ref>:» должен идти пароль базы, затем «@».')
+      else if (ref && decodeURIComponent(url.username) !== `postgres.${ref}`) problems.push('SUPABASE_DB_URL: строка подключения от другого проекта, чем SUPABASE_PROJECT_REF (в начале строки должно быть postgres.<ваш ref>).')
+      else databaseUrl = v.databaseUrl.replace(/\s+/g, '')
+    }
+  }
+
+  // Cloudflare account id: 32 hex characters, also found inside a pasted dashboard address.
+  const accountId = /[0-9a-f]{32}/i.exec(v.cfAccountId)?.[0]?.toLowerCase() ?? ''
+  if (!v.cfAccountId) problems.push('Не задан секрет CLOUDFLARE_ACCOUNT_ID.')
+  else if (!accountId) {
+    const looks = v.cfAccountId.includes('@') ? ' Похоже, туда вставлена почта.' : v.cfAccountId.length >= 38 && !/\s/.test(v.cfAccountId) ? ' Похоже, туда вставлен API-токен.' : ''
+    problems.push(`CLOUDFLARE_ACCOUNT_ID: нужен Account ID — 32 символа (цифры и буквы a–f). Его видно в адресе страницы после входа: dash.cloudflare.com/<ID>/home. Сейчас длина значения: ${v.cfAccountId.length}.${looks}`)
+  }
+
+  // Cloudflare API token.
+  if (!v.cfApiToken) problems.push('Не задан секрет CLOUDFLARE_API_TOKEN.')
+  else if (/\s/.test(v.cfApiToken)) problems.push('CLOUDFLARE_API_TOKEN: внутри токена пробел или перенос строки — скопируйте токен заново, одной строкой.')
+  else if (/^[0-9a-f]{32}$/i.test(v.cfApiToken)) problems.push('CLOUDFLARE_API_TOKEN: похоже, туда вставлен Account ID. Нужен токен из My Profile → API Tokens → Create Token (право Cloudflare Pages: Edit).')
+  else if (v.cfApiToken.length < 30) problems.push(`CLOUDFLARE_API_TOKEN: слишком короткий (длина ${v.cfApiToken.length}) — похоже, скопирован не целиком.`)
+
+  if (!v.demoPassword) problems.push('Не задан секрет DEMO_OWNER_PASSWORD.')
+  else if (v.demoPassword.length < 8) problems.push('DEMO_OWNER_PASSWORD: пароль не короче 8 символов.')
+  else if (/[\r\n]/.test(v.demoPassword)) problems.push('DEMO_OWNER_PASSWORD: пароль должен быть одной строкой.')
+
+  if (v.llmApiKey && /\s/.test(v.llmApiKey)) problems.push('LLM_API_KEY: внутри ключа пробел или перенос строки — скопируйте ключ заново.')
+
+  if (!/^[a-z0-9](?:[a-z0-9-]{0,56}[a-z0-9])?$/.test(v.pagesProject)) problems.push(`Имя проекта Cloudflare Pages: только строчная латиница, цифры и дефис (сейчас: «${v.pagesProject}»).`)
+
+  return {
+    inputs: { accessToken: v.accessToken, projectRef: ref, databaseUrl, cfApiToken: v.cfApiToken, cfAccountId: accountId, demoPassword: v.demoPassword, llmApiKey: v.llmApiKey, pagesProject: v.pagesProject },
+    problems,
+  }
+}

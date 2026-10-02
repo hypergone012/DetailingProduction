@@ -1,6 +1,7 @@
 /**
  * Steps of the one-click deploy (.github/workflows/deploy.yml) that talk to Supabase.
  *
+ *   tsx scripts/deploy/cli.ts check       repository secrets (RAW_*) -> exact values in $GITHUB_ENV, or every problem at once
  *   tsx scripts/deploy/cli.ts pages       create the Cloudflare Pages project if needed; APP_URL -> $GITHUB_ENV
  *   tsx scripts/deploy/cli.ts keys        anon / service_role keys -> $GITHUB_ENV (masked)
  *   tsx scripts/deploy/cli.ts extensions  enable pg_cron + pg_net (before migrations)
@@ -20,7 +21,7 @@ import { stripVTControlCharacters } from 'node:util'
 import postgres from 'postgres'
 import { generateVapidKeys } from '@dp/core/push/webpush'
 import { sslFor } from '../db/migrate.ts'
-import { functionEnv, pickJwtKeys, pickPagesDomain, planSecrets, toDotenv, VAULT_SECRETS, type VaultName } from './plan.ts'
+import { functionEnv, normalizeInputs, pickJwtKeys, pickPagesDomain, planSecrets, toDotenv, VAULT_SECRETS, type VaultName } from './plan.ts'
 
 const [command, ...args] = process.argv.slice(2)
 const flag = (name: string) => args.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3)
@@ -45,6 +46,34 @@ function exportEnv(name: string, value: string) {
 function db() {
   const url = need('DATABASE_URL')
   return postgres(url, { max: 1, ssl: sslFor(url), onnotice: () => {} })
+}
+
+/** Repository secrets arrive as RAW_*; the exact values go to $GITHUB_ENV under the names the steps use. */
+function check() {
+  const env = process.env
+  const { inputs, problems } = normalizeInputs({
+    accessToken: env.RAW_SUPABASE_ACCESS_TOKEN,
+    projectRef: env.RAW_SUPABASE_PROJECT_REF,
+    databaseUrl: env.RAW_SUPABASE_DB_URL,
+    cfApiToken: env.RAW_CLOUDFLARE_API_TOKEN,
+    cfAccountId: env.RAW_CLOUDFLARE_ACCOUNT_ID,
+    demoPassword: env.RAW_DEMO_OWNER_PASSWORD,
+    llmApiKey: env.RAW_LLM_API_KEY,
+    pagesProject: env.PAGES_PROJECT,
+  })
+  if (problems.length) {
+    for (const p of problems) console.log(`::error::${p}`)
+    throw new Error(`Секреты репозитория: ${problems.length} ${problems.length === 1 ? 'ошибка' : 'ошибки'} — исправьте в Settings → Secrets and variables → Actions и запустите снова (подробности выше; DEPLOY-IN-BROWSER.md, шаг 3).`)
+  }
+  for (const value of [inputs.accessToken, inputs.databaseUrl, inputs.cfApiToken, inputs.cfAccountId, inputs.demoPassword, inputs.llmApiKey, inputs.projectRef]) if (value) mask(value)
+  exportEnv('SUPABASE_ACCESS_TOKEN', inputs.accessToken)
+  exportEnv('SUPABASE_PROJECT_REF', inputs.projectRef)
+  exportEnv('DATABASE_URL', inputs.databaseUrl)
+  exportEnv('CLOUDFLARE_API_TOKEN', inputs.cfApiToken)
+  exportEnv('CLOUDFLARE_ACCOUNT_ID', inputs.cfAccountId)
+  exportEnv('TENANT_DEMO_OWNER_PASSWORD', inputs.demoPassword)
+  if (inputs.llmApiKey) exportEnv('LLM_API_KEY', inputs.llmApiKey)
+  console.log(`✓ секреты на месте и в правильном виде${inputs.llmApiKey ? ' (умный помощник включён)' : ' (умный помощник — по шаблонам, LLM_API_KEY не задан)'}`)
 }
 
 const WRANGLER = ['dlx', 'wrangler@4.146.0']
@@ -178,13 +207,15 @@ function summary() {
   console.log(lines.join('\n'))
 }
 
-const commands: Record<string, () => unknown> = { pages, keys, extensions, finalize, auth, summary }
+const commands: Record<string, () => unknown> = { check, pages, keys, extensions, finalize, auth, summary }
 const run = command ? commands[command] : undefined
 if (!run) {
   console.error(`usage: tsx scripts/deploy/cli.ts ${Object.keys(commands).join('|')}`)
   process.exit(2)
 }
-Promise.resolve(run()).catch((e: unknown) => {
-  console.error(`::error::${(e as Error).message}`)
-  process.exit(1)
-})
+Promise.resolve()
+  .then(run)
+  .catch((e: unknown) => {
+    console.error(`::error::${(e as Error).message}`)
+    process.exit(1)
+  })
