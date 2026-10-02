@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it } from 'vitest'
-import { at, clientBook, count, createTenant, expectCode, localDay, ownerCall, publish, sql } from './helpers.ts'
+import { asService, at, clientBook, count, createTenant, expectCode, localDay, ownerCall, publish, sql } from './helpers.ts'
 
 
 afterAll(async () => {
@@ -134,5 +134,57 @@ describe('tenant publish', () => {
     await expectCode(publish(notReady), 'NOT_READY')
     const [row] = await sql`select status from public.tenants where id = ${t.id}`
     expect(row!.status).toBe('demo')
+  })
+})
+
+describe('tenant remove', () => {
+  const remove = (slug: string, dryRun = false) =>
+    asService(async (tx) => (await tx`select public.api_admin_remove_tenant(${slug}, ${dryRun}) as r`)[0]!.r as Record<string, unknown>)
+
+  it('removes a demo studio with everything it holds and leaves other studios unchanged', async () => {
+    const other = await createTenant({ slug: 'rm-keep' })
+    const before = await snapshot(other.id)
+    const t = await createTenant({ slug: 'rm-demo', status: 'demo' })
+    const day = await localDay(t.timezone, 3)
+    const booking = await clientBook(t, { startsAt: await at(t.timezone, day, '10:00') })
+    await ownerCall(t.ownerId, 'owner_record_payment', t.id, { booking_id: booking.booking.id, method: 'cash', amount_cents: 100000 })
+    // The bare test database has no Storage schema; with the local stack's database it does.
+    const [{ storage }] = (await sql`select to_regclass('storage.objects') is not null as storage`) as unknown as [{ storage: boolean }]
+    if (storage) await sql`insert into storage.objects (bucket_id, name) values ('public-media', ${`${t.id}/config/hero.webp`})`
+
+    const plan = await remove(t.slug, true)
+    expect(plan).toMatchObject({ found: true, removed: false, tenant_id: t.id, bookings: 1, customers: 1 })
+    expect(plan.objects).toEqual(storage ? [{ bucket: 'public-media', path: `${t.id}/config/hero.webp` }] : [])
+    expect(plan.orphan_users).toEqual([t.ownerId])
+    expect(await count(sql`select count(*)::int n from public.bookings where tenant_id = ${t.id}`)).toBe(1) // dry run
+
+    expect(await remove(t.slug)).toMatchObject({ found: true, removed: true })
+    const left = await sql`select
+      (select count(*)::int from public.tenants where id = ${t.id}) t,
+      (select count(*)::int from public.bookings where tenant_id = ${t.id}) b,
+      (select count(*)::int from public.payments where tenant_id = ${t.id}) p,
+      (select count(*)::int from public.customers where tenant_id = ${t.id}) c,
+      (select count(*)::int from public.services where tenant_id = ${t.id}) s,
+      (select count(*)::int from public.tenant_members where tenant_id = ${t.id}) m`
+    expect(left[0]).toEqual({ t: 0, b: 0, p: 0, c: 0, s: 0, m: 0 })
+    expect(await snapshot(other.id)).toEqual(before)
+    expect(await remove(t.slug)).toEqual({ found: false, slug: t.slug }) // running it again is safe
+    if (storage) await sql`delete from storage.objects where bucket_id = 'public-media' and name like ${t.id + '/%'}`
+  })
+
+  it('a studio that is or ever was live is never removed', async () => {
+    const live = await createTenant({ slug: 'rm-live' })
+    await expectCode(remove(live.slug), 'LIVE_TENANT')
+    const back = await createTenant({ slug: 'rm-was-live', status: 'demo' })
+    await sql`update public.tenants set live_since = now() - interval '1 day' where id = ${back.id}`
+    await expectCode(remove(back.slug), 'LIVE_TENANT')
+    expect(await count(sql`select count(*)::int n from public.tenants where id in (${live.id}, ${back.id})`)).toBe(2)
+  })
+
+  it('a member who also belongs to another studio is not an orphan', async () => {
+    const a = await createTenant({ status: 'demo' })
+    const b = await createTenant({ status: 'demo' })
+    await sql`insert into public.tenant_members (tenant_id, user_id, role) values (${b.id}, ${a.ownerId}, 'manager')`
+    expect((await remove(a.slug, true)).orphan_users).toEqual([])
   })
 })

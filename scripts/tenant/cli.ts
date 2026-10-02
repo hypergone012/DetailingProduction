@@ -6,6 +6,7 @@
  *   pnpm tenant:publish [<slug>... | --all] [--overwrite] [--reseed-demo] [--dry-run] [--reset-demo-password]
  *   pnpm tenant:verify [<slug>... | --all] [--app-url=http://127.0.0.1:4173]
  *   pnpm tenant:shells [--dist=apps/web/dist]
+ *   pnpm tenant:remove <slug>... [--dry-run]   (demo/draft studios only; delete tenants/<slug>/ first)
  *
  * Server credentials come from SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY (or the local stack).
  */
@@ -17,7 +18,7 @@ import { z } from 'zod'
 import { crossCheck, loadTenant, tenantSlugs, TENANTS_DIR, type LoadedTenant, type Problem } from './lib/load.ts'
 import { publishTenant } from './lib/publish.ts'
 import { writeShells } from './lib/shells.ts'
-import { loadEnv } from './lib/supabase.ts'
+import { deleteUser, loadEnv, removeObjects, rpc } from './lib/supabase.ts'
 import { verifyTenants, type CheckLevel } from './lib/verify.ts'
 
 const [command, ...rest] = process.argv.slice(2)
@@ -154,6 +155,62 @@ async function cmdShells() {
   await writeShells(loadEnv(), dist, (l) => console.log(l))
 }
 
+interface RemovePlan {
+  found: boolean
+  removed?: boolean
+  tenant_id?: string
+  name?: string
+  status?: string
+  bookings?: number
+  customers?: number
+  objects?: { bucket: string; path: string }[]
+  orphan_users?: string[]
+}
+
+/**
+ * Removes studios that are no longer wanted: database rows (everything cascades from the
+ * tenant), Storage objects under the studio's prefix, and the Auth accounts of members who
+ * belong to no other studio. The database refuses a studio that is or ever was live.
+ * Running it again for a studio that is already gone is a no-op.
+ */
+async function cmdRemove() {
+  if (positional.length === 0) throw new Error('укажите студию: pnpm tenant:remove <slug>')
+  const env = loadEnv()
+  const dryRun = flags.has('dry-run')
+  for (const slug of positional) {
+    if (!/^[a-z0-9][a-z0-9-]{1,40}$/.test(slug)) throw new Error(`«${slug}» не похоже на адрес студии (латиница, цифры, дефис)`)
+    if (existsSync(join(TENANTS_DIR, slug, 'business.json'))) {
+      throw new Error(`папка tenants/${slug} ещё в репозитории: удалите её, иначе следующий Deploy опубликует студию заново`)
+    }
+    const plan = await rpc<RemovePlan>(env, 'api_admin_remove_tenant', { p_slug: slug, p_dry_run: true })
+    if (!plan.found) {
+      console.log(`✓ ${slug}: такой студии в базе нет — удалять нечего`)
+      continue
+    }
+    const objects = plan.objects ?? []
+    const users = plan.orphan_users ?? []
+    console.log(`${dryRun ? '•' : '✓'} ${slug} (${plan.name}, ${plan.status}): записей ${plan.bookings}, клиентов ${plan.customers}, файлов ${objects.length}, входов в кабинет ${users.length}`)
+    if (dryRun) {
+      console.log('  --dry-run: ничего не удалено')
+      continue
+    }
+    for (const bucket of new Set(objects.map((o) => o.bucket))) {
+      await removeObjects(env, bucket, objects.filter((o) => o.bucket === bucket).map((o) => o.path))
+    }
+    await rpc(env, 'api_admin_remove_tenant', { p_slug: slug, p_dry_run: false })
+    let usersRemoved = 0
+    for (const id of users) {
+      try {
+        await deleteUser(env, id)
+        usersRemoved++
+      } catch (e) {
+        console.log(`  ! вход в кабинет не удалён: ${e instanceof Error ? e.message : String(e)}`)
+      }
+    }
+    console.log(`  удалено: студия и все её данные, файлов ${objects.length}, входов в кабинет ${usersRemoved}`)
+  }
+}
+
 /** Writes tenants/business.schema.json (editor autocompletion; Zod remains the authority). */
 async function cmdSchema() {
   const json = z.toJSONSchema(businessSchema, { io: 'input', unrepresentable: 'any' })
@@ -167,6 +224,7 @@ const commands: Record<string, () => Promise<void>> = {
   publish: cmdPublish,
   verify: cmdVerify,
   shells: cmdShells,
+  remove: cmdRemove,
   schema: cmdSchema,
 }
 

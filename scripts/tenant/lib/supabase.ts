@@ -120,6 +120,17 @@ export async function setPassword(env: Env, userId: string, password: string): P
   await call(env, `/auth/v1/admin/users/${userId}`, { method: 'PUT', json: { password } })
 }
 
+export async function deleteUser(env: Env, userId: string): Promise<void> {
+  await call(env, `/auth/v1/admin/users/${userId}`, { method: 'DELETE' })
+}
+
+/** Removes Storage objects (missing ones are ignored by Storage). */
+export async function removeObjects(env: Env, bucket: string, paths: string[]): Promise<void> {
+  for (let i = 0; i < paths.length; i += 100) {
+    await call(env, `/storage/v1/object/${bucket}`, { method: 'DELETE', json: { prefixes: paths.slice(i, i + 100) } })
+  }
+}
+
 /** One-time link for an owner to set their password (sent by the operator). */
 export async function recoveryLink(env: Env, email: string, redirectTo: string): Promise<string> {
   const res = (await call(env, '/auth/v1/admin/generate_link', {

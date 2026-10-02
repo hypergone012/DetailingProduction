@@ -27,6 +27,7 @@
     "tenant:publish": "tsx scripts/tenant/cli.ts publish",
     "tenant:verify": "tsx scripts/tenant/cli.ts verify",
     "tenant:shells": "tsx scripts/tenant/cli.ts shells",
+    "tenant:remove": "tsx scripts/tenant/cli.ts remove",
     "tenant:art": "tsx scripts/tenant/demo-art.ts",
     "security:scan-bundle": "tsx scripts/security/scan-bundle.ts",
     "tenant:schema": "tsx scripts/tenant/cli.ts schema",

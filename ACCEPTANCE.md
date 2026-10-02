@@ -19,15 +19,15 @@
 |---|---|
 | `pnpm typecheck` (TS strict, 4 проекта) | ✅ exit 0 |
 | `pnpm lint` | ✅ exit 0 |
-| `pnpm test` — unit | ✅ 82 passed (10 файлов) |
-| `pnpm test:db` — SQL против настоящего Postgres 16 | ✅ 78 passed (8 файлов) |
+| `pnpm test` — unit | ✅ 95 passed (11 файлов) |
+| `pnpm test:db` — SQL против настоящего Postgres 16 | ✅ 82 passed (8 файлов) |
 | `pnpm test:api` — HTTP: шлюз → Deno-функции → PostgREST → Postgres / GoTrue / Storage | ✅ 23 passed (3 файла) |
 | `pnpm functions:check` — `deno check` всех Edge Functions | ✅ exit 0 |
 | `pnpm build` — production-сборка | ✅ exit 0 |
-| `pnpm tenant:shells` | ✅ 2 студии + `_redirects` |
+| `pnpm tenant:shells` | ✅ 1 студия (GRAPHITE; VERDE удалена 2026-10-02) + `_redirects` |
 | `actionlint .github/workflows/deploy.yml` | ✅ без ошибок |
-| `pnpm security:scan-bundle` | ✅ нет секретов в 200 файлах сборки (оболочки `dist/s/` собраны из публичного API и в проверку секретов не входят); нет названий студий в 288 файлах кода и сборки |
-| `pnpm tenant:verify --all --app-url=http://127.0.0.1:4173` (vite preview) | ✅ 23 passed, 0 failed, 0 warnings, 0 skipped |
+| `pnpm security:scan-bundle` | ✅ нет секретов в 203 файлах сборки (оболочки `dist/s/` собраны из публичного API и в проверку секретов не входят); нет названий студий в 299 файлах кода и сборки |
+| `pnpm tenant:verify --all --app-url=http://127.0.0.1:4173` (vite preview) | ✅ 11 passed, 0 failed, 0 warnings, 0 skipped (одна студия) |
 | `pnpm test:e2e` — Playwright, Pixel 7 / Chromium | ✅ 1 passed |
 
 ### 1.2 Требования → проверки
@@ -37,7 +37,7 @@
 | Требование | Чем проверено |
 |---|---|
 | Миграции применяются | `pnpm db:migrate` на dev-базе; `test:db` создаёт отдельную базу и применяет все миграции с нуля. Изменённая уже применённая миграция → `db:migrate` падает. |
-| Seed работает | `money-stats` › «completed work, payments and averages come from SQL…»: история через `api_admin_seed_demo`, повторный вызов → `already_seeded`. Dev-база после `tenant:publish`: GRAPHITE — 10 демо-клиентов и 26 демо-записей, VERDE — 6 и 13; `tenant:verify`: 219 и 682 свободных слота на 14 дней, владелец есть, демо ничего не отправляло. |
+| Seed работает | `money-stats` › «completed work, payments and averages come from SQL…»: история через `api_admin_seed_demo`, повторный вызов → `already_seeded`. Dev-база после `tenant:publish`: GRAPHITE — 10 демо-клиентов и 26 демо-записей (VERDE до удаления — 6 и 13); `tenant:verify`: 209 свободных слотов на 14 дней, владелец есть, демо ничего не отправляло. |
 | Конкуренция за слот | `booking-engine` › «two clients racing for the last slot: exactly one wins»; «a burst of 12 parallel requests for one slot creates one booking per free resource»; «the exclusion constraint holds even for direct inserts that bypass the engine» |
 | Два ресурса | `booking-engine` › «two compatible resources serve the same slot; the third request fails» |
 | Многодневная занятость | `booking-engine` › «spreads work over working days and occupies the bay continuously»; «skips closed days inside a multi-day job» |
@@ -62,6 +62,8 @@
 | ИИ: ограниченный цикл, fallback, JSON-intent роутер | `assistant` › «stops after a bounded number of model calls», «falls back honestly when the LLM fails, and when the daily budget is spent», «a proposed booking is checked against real availability…»; режим без LLM: «turns a booking request into real free slots…», «answers prices, hours and unknown questions without inventing anything»; роутер отдельно: `intent.test`, `dates.test` |
 | Сценарий Playwright | `tests/e2e/booking.spec.ts`: открыть студию → услуга → авто → слот → подтвердить → «Вы записаны» и номер → карточка записи → **отдельный браузерный профиль**: вход владельца → клиенты → карточка → лист записи (номер, статус, авто) → запись на своём дне в календаре |
 | Конвейер студий | `tenant:new` → правка конфига → `validate` → `publish` (дважды: второй раз `no changes`) → `verify` 11/11 → вход владельца в Chromium → удаление студии. Замер в CLONE-IN-6-MINUTES.md. Республикация не трогает данные: `publish` › «republishing never destroys runtime data and keeps owner edits» |
+| Правки владельца переживают Deploy | `publish` › «republishing never destroys runtime data and keeps owner edits» (изменённая услуга не перезаписывается); «a photo or day off the owner deleted stays deleted after republishing» — без миграции …017 тест падал (фото и выходной возвращались); `--overwrite` возвращает конфигурацию. Режим работы публикация не понижает (`api_admin_publish_tenant`, только draft→demo/live и demo→live). |
+| Удаление ненужной студии | `publish` › «removes a demo studio with everything it holds and leaves other studios unchanged» (другая студия — побайтно без изменений; повтор — `found: false`), «a studio that is or ever was live is never removed», «a member who also belongs to another studio is not an orphan». На локальном стеке с настоящими Storage и GoTrue: `tenant:remove verde` — 13 записей, 6 клиентов, 30 файлов, 1 вход удалены; повтор — «удалять нечего»; GRAPHITE — 35 файлов, 27 записей на месте; `/s/verde/` показывает «Студия не найдена». |
 | Второй тенант не ломает первый | `publish` › «publishing tenant B leaves tenant A byte-for-byte unchanged»; `tenant:verify --all` по обеим демо-студиям |
 | Нет секретов во фронтенде | `security:scan-bundle`: значения серверных секретов, JWT с ролью ≠ anon, приватные ключи, ключи API во всех файлах сборки, включая source maps. Отдельно проверено, что подложенный service-role ключ даёт exit 1. |
 | White-label: нет названий студий в коде | `security:scan-bundle` (названия и slug всех студий в общем коде и сборке); eslint-правило против сравнений со slug |
@@ -123,6 +125,7 @@
 | Кнопка выкладки GitHub Actions **Deploy** (`.github/workflows/deploy.yml`) на аккаунтах владельца | ✅ **PASSED — запуск 6, 2026-10-02** ([run 37039517466](https://github.com/hypergone012/DetailingProduction/actions/runs/37039517466)). Сайт: `https://detailing-studio-6wl.pages.dev` (имя занято — Cloudflare добавил суффикс, кнопка прочитала его сама). Выполнено: проверка секретов и подключения к базе; `pg_cron` и `pg_net`; 16 миграций (в запуске 5; в 6 — «up to date»); секреты сохранены в Vault и при повторном запуске не перегенерированы; Cron `notify-dispatch` (каждую минуту) и `housekeeping` (ежедневно); 4 Edge Functions; Auth (site URL, redirect, регистрация выключена); публикация GRAPHITE и VERDE; сборка, оболочки, проверка сборки на секреты; Cloudflare Pages; `tenant:verify --all --app-url` против живого сайта — **23 passed, 0 failed**. Найдено по ходу запусков 1–5 и исправлено: Account ID с лишними символами, пароль с `@` и `/` в строке подключения, ручная подстановка пароля (теперь отдельный секрет `SUPABASE_DB_PASSWORD`), кратковременные отказы пулера после смены пароля (повторы). |
 | Доступность `supabase.co` / `pages.dev` из российских сетей | **NOT RUN — проверить отсюда нельзя.** В 2025 году сообщалось о блокировках и замедлениях у части провайдеров; проверка с мобильного интернета без VPN — в DEPLOY-IN-BROWSER.md, часть 7. |
 | Cloudflare Pages / Netlify: `_redirects`, `_headers`, оболочки студий | **NOT RUN — хостинги закрыты сетевой политикой.** Те же правила локально применяет `vite preview` (`studioShells`), проверено `tenant:verify --app-url`. |
+| Удаление VERDE из продакшена (Deploy с `remove_studios = verde`) и миграции …017–018 на проекте владельца | **NOT RUN — ждёт запуска Deploy владельцем.** Локально проверено (строки «Удаление ненужной студии» и «Правки владельца переживают Deploy» выше). |
 | Supabase Cron (`pg_cron` + `pg_net`) → диспетчер уведомлений | ✅ расширения включены и задания созданы на проекте владельца (запуск 6). **NOT RUN:** реальная доставка push на устройство (нужен телефон с установленным приложением). Сам диспетчер проверен прямым HTTP-вызовом (`dispatcher` › 3 теста). |
 | Реальные фото студий | **NOT RUN — фотохостинги закрыты сетью.** Демо-студии на сгенерированных иллюстрациях с `demoArtwork: true`; live с ними запрещён схемой и SQL. |
 | Push-сервисы браузеров (FCM, Mozilla autopush, Apple) | **NOT RUN — сеть.** Шифрование (RFC 8291) и VAPID (RFC 8292) проверены расшифровкой ключом подписчика и доставкой на локальный HTTPS push-сервис. |

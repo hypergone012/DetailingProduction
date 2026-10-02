@@ -15,6 +15,10 @@ on:
         description: 'Свой домен, если уже подключён к проекту Pages (например https://app.example.ru). Пусто — адрес pages.dev.'
         required: false
         default: ''
+      remove_studios:
+        description: 'Удалить ненужные демо-студии (адреса через пробел или запятую, например: verde). Папку студии сначала удалите из tenants/. Работающая (live) студия не удаляется. Пусто — ничего не удалять.'
+        required: false
+        default: ''
 
 concurrency:
   group: deploy
@@ -41,6 +45,7 @@ jobs:
       LLM_MODEL: ${{ vars.LLM_MODEL }}
       PAGES_PROJECT: ${{ inputs.pages_project }}
       CUSTOM_APP_URL: ${{ inputs.app_url }}
+      REMOVE_STUDIOS: ${{ inputs.remove_studios }}
     steps:
       - uses: actions/checkout@v4
 
@@ -88,6 +93,15 @@ jobs:
 
       - name: Auth — адрес сайта и вход только по приглашению
         run: pnpm -s deploy:step auth
+
+      # Only the studios named in the form, only demo/draft ones (the database refuses a live
+      # studio), and only after their folder left the repository. Running it again is a no-op.
+      - name: Студии — удаление ненужных
+        if: inputs.remove_studios != ''
+        shell: bash
+        run: |
+          read -ra slugs <<< "${REMOVE_STUDIOS//,/ }"
+          pnpm -s tenant:remove "${slugs[@]}"
 
       # Demo studios: the cabinet password always follows the DEMO_OWNER_PASSWORD secret
       # (change the secret, run Deploy, sign in). Owners of live studios are never touched.

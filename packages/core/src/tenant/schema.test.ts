@@ -28,7 +28,7 @@ const issues = (input: unknown) => {
 describe('business.json schema', () => {
   it('accepts every tenant in the repository (incl. the template)', () => {
     const dirs = readdirSync(TENANTS, { withFileTypes: true }).filter((d) => d.isDirectory())
-    expect(dirs.length).toBeGreaterThanOrEqual(3)
+    expect(dirs.map((d) => d.name)).toEqual(expect.arrayContaining(['_template', 'graphite']))
     for (const d of dirs) expect(issues(read(d.name)), d.name).toEqual([])
   })
 

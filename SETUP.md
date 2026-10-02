@@ -7,9 +7,9 @@ apps/web                 React 19 PWA: клиент /s/:slug/*, кабинет /
 packages/core            общие типы, Zod-схемы, темы, crypto, Web Push, ICS, ИИ-роутер
 supabase/migrations      схема, RLS, движок записи, API-функции (SQL)
 supabase/functions       Edge Functions: public-api, owner-api, notify-dispatcher, assistant
-scripts/tenant           tenant:new | validate | publish | verify | shells
+scripts/tenant           tenant:new | validate | publish | verify | shells | remove
 scripts/local            локальный стек без Docker, ключи и env
-tenants/                 конфигурации студий (graphite, verde — демо; _template — шаблон)
+tenants/                 конфигурации студий (graphite — демо; _template — шаблон)
 tests/                   unit (vitest), db (SQL), api (HTTP), e2e (Playwright)
 ```
 
@@ -41,14 +41,14 @@ pnpm stack init          # один раз: GoTrue, PostgREST, Storage, клас
 pnpm stack start         # Postgres :54322, Auth :54324, PostgREST :54325, Storage :54326
 pnpm db:migrate          # миграции supabase/migrations/*.sql
 pnpm stack:env           # .local/functions.env (секреты функций) + apps/web/.env.local (VITE_*)
-pnpm tenant:publish      # публикует tenants/* (демо-студии graphite и verde)
+pnpm tenant:publish      # публикует tenants/* (демо-студия graphite)
 pnpm functions:serve     # шлюз :54321 = /auth/v1, /rest/v1, /storage/v1, /functions/v1
 pnpm dev                 # http://127.0.0.1:5173
 ```
 
 Открыть:
 
-- клиент: `http://127.0.0.1:5173/s/graphite/` и `http://127.0.0.1:5173/s/verde/`
+- клиент: `http://127.0.0.1:5173/s/graphite/`
 - кабинет: `http://127.0.0.1:5173/s/graphite/owner/` — email владельца из `tenants/graphite/business.json` (`owners[0].email`), пароль демо-владельца в **локальном** стеке `demo-owner-2026` (в не-локальной среде берётся из `TENANT_DEMO_OWNER_PASSWORD`).
 
 Полезное:
