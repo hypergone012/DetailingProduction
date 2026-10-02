@@ -15,6 +15,7 @@ import { GallerySection } from './GallerySection'
 import { NotificationsSection } from './NotificationsSection'
 import { ProfileSection } from './ProfileSection'
 import { RulesSection } from './RulesSection'
+import { ShareSection } from './ShareSection'
 import { StatusSection } from './StatusSection'
 
 export function SettingsScreen() {
@@ -37,6 +38,7 @@ export function SettingsScreen() {
         ) : (
           <>
             <StatusSection tenant={settings.data.tenant} />
+            <ShareSection />
             <Link to={`/s/${slug}/owner/schedule`} className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 outline-none hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-focus">
               <CalendarClock className="size-5 text-fg-subtle" aria-hidden />
               <span className="grid flex-1">

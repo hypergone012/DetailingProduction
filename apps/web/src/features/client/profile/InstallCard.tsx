@@ -1,10 +1,15 @@
-import { Download, Share, SquarePlus } from 'lucide-react'
+import { Download } from 'lucide-react'
+import { currentPlatform, InstallSteps } from '@/components/InstallSteps'
 import { Button } from '@/components/ui/button'
 import { useInstall } from '@/lib/install'
 
+/**
+ * "Install the app": the browser's own prompt where it offers one (Chrome, Edge, Android),
+ * otherwise the manual steps for this device (Safari on iPhone, Firefox, Samsung Internet...).
+ */
 export function InstallCard({ name }: { name: string }) {
   const { state, install } = useInstall()
-  if (state === 'installed' || state === 'unavailable') return null
+  if (state === 'installed') return null
   return (
     <div className="grid gap-3 rounded-2xl border border-line bg-surface p-4">
       <div className="flex gap-3">
@@ -13,7 +18,7 @@ export function InstallCard({ name }: { name: string }) {
         </span>
         <div className="grid gap-1 text-sm">
           <p className="font-medium">Приложение {name}</p>
-          <p className="text-fg-muted">Запись в одно касание с главного экрана, работает и без интернета для просмотра студии.</p>
+          <p className="text-fg-muted">Иконка на главном экране и запись в одно касание. Это тот же сайт: ничего скачивать из магазина не нужно.</p>
         </div>
       </div>
       {state === 'prompt' ? (
@@ -21,14 +26,7 @@ export function InstallCard({ name }: { name: string }) {
           Установить
         </Button>
       ) : (
-        <ol className="grid gap-1.5 rounded-xl bg-sunken p-3 text-sm text-fg-muted">
-          <li className="flex items-center gap-2">
-            <Share className="size-4" aria-hidden /> Нажмите «Поделиться» в Safari
-          </li>
-          <li className="flex items-center gap-2">
-            <SquarePlus className="size-4" aria-hidden /> Выберите «На экран „Домой“»
-          </li>
-        </ol>
+        <InstallSteps platforms={[currentPlatform()]} />
       )}
     </div>
   )

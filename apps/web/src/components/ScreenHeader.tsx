@@ -38,9 +38,9 @@ export function ScreenHeader({
   return (
     <header
       className={cn('sticky top-0 z-30 border-b bg-bg/95 backdrop-blur-sm transition-colors', scrolled ? 'border-line' : 'border-transparent')}
-      style={{ paddingTop: 'var(--dp-safe-top)' }}
+      style={{ paddingTop: 'var(--dp-safe-top)', top: 'var(--dp-header-offset, 0px)' }}
     >
-      <div className={cn('mx-auto flex h-14 items-center gap-1 px-2', wide ? 'max-w-6xl' : 'max-w-xl')}>
+      <div className={cn('mx-auto flex h-14 items-center gap-1 px-2', wide ? 'max-w-6xl' : 'max-w-xl md:max-w-2xl')}>
         {parent ? (
           <Button variant="ghost" size="icon" onClick={back} aria-label="Назад">
             <ChevronLeft />

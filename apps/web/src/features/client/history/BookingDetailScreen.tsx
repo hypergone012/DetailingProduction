@@ -35,7 +35,7 @@ export function BookingDetailScreen() {
     return (
       <>
         <ScreenHeader title="Запись" parent={`/s/${slug}/history`} />
-        <div className="mx-auto grid max-w-xl gap-3 px-4">
+        <div className="mx-auto grid max-w-xl md:max-w-2xl gap-3 px-4">
           <Skeleton className="h-28 rounded-2xl" />
           <Skeleton className="h-40 rounded-2xl" />
         </div>
@@ -74,7 +74,7 @@ export function BookingDetailScreen() {
   return (
     <>
       <ScreenHeader title={`Запись ${b.code}`} parent={`/s/${slug}/history`} />
-      <div className="mx-auto grid max-w-xl gap-6 px-4 pb-10">
+      <div className="mx-auto grid max-w-xl md:max-w-2xl gap-6 px-4 pb-10">
         <Card className="grid gap-4 p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="grid gap-1">

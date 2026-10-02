@@ -26,7 +26,7 @@ export function ServicesScreen() {
   return (
     <>
       <ScreenHeader title="Услуги и запись" large />
-      <div className="mx-auto grid max-w-xl gap-4 px-4 pt-1 pb-8">
+      <div className="mx-auto grid max-w-xl md:max-w-2xl gap-4 px-4 pt-1 pb-8">
         {categories.length > 1 && (
           <div className="scroll-x -mx-4 flex gap-2 px-4" role="group" aria-label="Категории">
             {[null, ...categories].map((c) => (

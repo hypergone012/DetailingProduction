@@ -35,7 +35,7 @@ export function HistoryScreen() {
   return (
     <>
       <ScreenHeader title="Мои записи" large />
-      <div className="mx-auto grid max-w-xl gap-6 px-4 pt-1 pb-8">
+      <div className="mx-auto grid max-w-xl md:max-w-2xl gap-6 px-4 pt-1 pb-8">
         {!profile && isFetching ? (
           <div className="grid gap-3">
             <Skeleton className="h-20 rounded-2xl" />

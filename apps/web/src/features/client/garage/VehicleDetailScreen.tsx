@@ -73,7 +73,7 @@ export function VehicleDetailScreen() {
           </Button>
         }
       />
-      <div className="mx-auto grid max-w-xl gap-6 px-4 pb-10">
+      <div className="mx-auto grid max-w-xl md:max-w-2xl gap-6 px-4 pb-10">
         <div className="relative overflow-hidden rounded-2xl border border-line bg-sunken">
           {v.photo?.url ? (
             <img src={v.photo.url} alt={`${v.make} ${v.model}`} className="aspect-[16/10] w-full object-cover" />

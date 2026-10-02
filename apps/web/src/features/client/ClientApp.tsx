@@ -9,6 +9,7 @@ import { useReturnFocus } from '@/lib/focus'
 import { BookingFlowProvider, useBookingFlow } from './booking/flow'
 import { HomeScreen } from './home/HomeScreen'
 import { BottomNav } from './layout/BottomNav'
+import { TopNav } from './layout/TopNav'
 import { ScreenTransition } from './layout/ScreenTransition'
 
 // Home renders from the first chunk; everything else (and the sheets) loads on demand and is
@@ -48,7 +49,7 @@ function usePrefetch() {
 
 function ScreenFallback() {
   return (
-    <div className="mx-auto grid max-w-xl gap-3 px-4 pt-[calc(var(--dp-safe-top)+64px)]" aria-busy="true">
+    <div className="mx-auto grid max-w-xl md:max-w-2xl gap-3 px-4 pt-[calc(var(--dp-safe-top)+64px)]" aria-busy="true">
       <Skeleton className="h-24 rounded-2xl" />
       <Skeleton className="h-24 rounded-2xl" />
     </div>
@@ -90,7 +91,8 @@ export function ClientApp() {
       <MotionProvider>
         <TenantHead data={data} app="client" />
         <BookingFlowProvider>
-          <main className="min-h-dvh pb-[calc(var(--dp-nav-height)+var(--dp-safe-bottom)+8px)]">
+          <TopNav />
+          <main className="min-h-dvh pb-[calc(var(--dp-nav-height)+var(--dp-safe-bottom)+8px)] md:pt-16 md:pb-12 md:[--dp-header-offset:4rem]">
             <ScreenTransition>
               <Suspense fallback={<ScreenFallback />}>
                 <Routes>

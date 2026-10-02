@@ -19,16 +19,20 @@ enable_confirmations = false
 
 # The public API authenticates clients by device key / booking token, not by JWT.
 [functions.public-api]
+import_map = "./functions/deno.json"
 verify_jwt = false
 
 # Owner actions require a valid user JWT; role checks happen in SQL.
 [functions.owner-api]
+import_map = "./functions/deno.json"
 verify_jwt = true
 
 # The assistant accepts anonymous clients (client scope) and owners (owner scope, JWT checked in code).
 [functions.assistant]
+import_map = "./functions/deno.json"
 verify_jwt = false
 
 # Called by Supabase Cron with x-dispatcher-secret.
 [functions.notify-dispatcher]
+import_map = "./functions/deno.json"
 verify_jwt = false

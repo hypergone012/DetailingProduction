@@ -25,7 +25,7 @@ export function ServiceDetailScreen() {
   return (
     <>
       <ScreenHeader title={s.name} parent={`/s/${slug}/services`} />
-      <div className="mx-auto grid max-w-xl gap-6 px-4 pb-32">
+      <div className="mx-auto grid max-w-xl md:max-w-2xl gap-6 px-4 pb-32">
         {images.length > 0 && (
           <div className="scroll-x -mx-4 flex gap-2 px-4 outline-none focus-visible:ring-2 focus-visible:ring-focus" role="region" aria-label={`Фото: ${s.name}`} tabIndex={0}>
             {images.map((m, i) => (
@@ -130,8 +130,8 @@ export function ServiceDetailScreen() {
           </Section>
         )}
       </div>
-      <div className="fixed inset-x-0 bottom-[calc(var(--dp-nav-height)+var(--dp-safe-bottom))] z-30 border-t border-line bg-bg-elevated/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-xl items-center gap-3 px-4 py-3">
+      <div className="fixed inset-x-0 bottom-[calc(var(--dp-nav-height)+var(--dp-safe-bottom))] z-30 md:bottom-0 border-t border-line bg-bg-elevated/95 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-xl md:max-w-2xl items-center gap-3 px-4 py-3">
           <div className="grid min-w-0 flex-1">
             <span className="truncate text-sm text-fg-muted">{s.name}</span>
             <span className="font-semibold tabular">

@@ -21,16 +21,21 @@ import { WEEKDAY_NAMES, openStatus } from '../shared/hours'
 export function HomeScreen() {
   const { data } = useTenant()
   return (
-    <div className="mx-auto grid max-w-xl gap-6 pb-8">
+    <div className="mx-auto grid max-w-xl gap-6 pb-8 md:max-w-2xl lg:max-w-5xl lg:pt-6">
       <StudioHero />
-      <div className="grid gap-6 px-4">
-        <BookNowCard />
-        {data.features.ai !== false && <AssistantCard />}
-        <UpcomingBooking />
-        <GarageGlance />
-        <PopularServices />
-        {data.media.some((m) => m.kind === 'gallery') && <Gallery />}
-        <About />
+      {/* Phone: one column in priority order. Desktop: booking and "mine" on the left, the studio on the right. */}
+      <div className="grid gap-6 px-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-8">
+        <div className="grid gap-6">
+          <BookNowCard />
+          {data.features.ai !== false && <AssistantCard />}
+          <UpcomingBooking />
+          <GarageGlance />
+        </div>
+        <div className="grid min-w-0 gap-6">
+          <PopularServices />
+          {data.media.some((m) => m.kind === 'gallery') && <Gallery />}
+          <About />
+        </div>
       </div>
     </div>
   )
@@ -43,8 +48,8 @@ function StudioHero() {
   const status = openStatus(data)
   return (
     <header className="relative">
-      <div className="relative aspect-[16/9] max-h-[320px] w-full overflow-hidden bg-sunken">
-        <Img media={hero} priority sizes="(max-width: 640px) 100vw, 640px" className="size-full" alt={data.branding.heroAlt ?? ''} />
+      <div className="relative aspect-[16/9] max-h-[320px] w-full overflow-hidden bg-sunken lg:mx-4 lg:aspect-[21/7] lg:max-h-[340px] lg:w-auto lg:rounded-3xl">
+        <Img media={hero} priority sizes="(max-width: 640px) 100vw, (max-width: 1024px) 672px, 1024px" className="size-full" alt={data.branding.heroAlt ?? ''} />
         <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-bg to-transparent" aria-hidden />
       </div>
       <div className="relative -mt-8 grid gap-2 px-4">
@@ -241,9 +246,9 @@ function PopularServices() {
   const { slug, data, currency, locale, mediaFor } = useTenant()
   return (
     <Section title="Услуги" action={<Link className="text-sm text-accent-text" to={`/s/${slug}/services`}>Все услуги</Link>}>
-      <div className="scroll-x -mx-4 flex gap-3 px-4 pb-1">
+      <div className="scroll-x -mx-4 flex gap-3 px-4 pb-1 lg:mx-0 lg:grid lg:grid-cols-2 lg:overflow-visible lg:px-0">
         {data.services.map((s) => (
-          <Link key={s.id} to={`/s/${slug}/services/${s.id}`} className="pressable w-[min(68vw,240px)] shrink-0 snap-start outline-none focus-visible:ring-2 focus-visible:ring-focus rounded-2xl">
+          <Link key={s.id} to={`/s/${slug}/services/${s.id}`} className="pressable w-[min(68vw,240px)] shrink-0 snap-start outline-none focus-visible:ring-2 focus-visible:ring-focus rounded-2xl lg:w-auto">
             <Card className="overflow-hidden">
               <Img media={mediaFor('service', s.id)[0]} sizes="240px" className="aspect-[4/3] w-full" alt="" />
               <div className="grid gap-1 p-3">
@@ -268,7 +273,7 @@ function Gallery() {
   const { mediaFor } = useTenant()
   return (
     <Section title="Работы студии">
-      <div className="scroll-x -mx-4 flex gap-3 px-4 pb-1 outline-none focus-visible:ring-2 focus-visible:ring-focus" role="region" aria-label="Работы студии" tabIndex={0}>
+      <div className="scroll-x -mx-4 flex gap-3 px-4 pb-1 outline-none focus-visible:ring-2 focus-visible:ring-focus lg:mx-0 lg:px-0" role="region" aria-label="Работы студии" tabIndex={0}>
         {mediaFor('gallery').map((m) => (
           <figure key={m.id} className="w-[min(78vw,300px)] shrink-0 snap-start">
             <Img media={m} sizes="300px" className="aspect-[4/3] w-full rounded-2xl" />

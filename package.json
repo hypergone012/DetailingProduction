@@ -31,7 +31,8 @@
     "security:scan-bundle": "tsx scripts/security/scan-bundle.ts",
     "tenant:schema": "tsx scripts/tenant/cli.ts schema",
     "stack:env": "tsx scripts/local/env.ts",
-    "push:vapid": "tsx -e \"import('@dp/core').then(async m => console.log(JSON.stringify(await m.generateVapidKeys(), null, 2)))\""
+    "push:vapid": "tsx -e \"import('@dp/core').then(async m => console.log(JSON.stringify(await m.generateVapidKeys(), null, 2)))\"",
+    "deploy:step": "tsx scripts/deploy/cli.ts"
   },
   "devDependencies": {
     "@dp/core": "workspace:*",

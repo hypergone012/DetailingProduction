@@ -21,8 +21,14 @@ export function listMigrations(): { version: string; name: string; path: string 
     })
 }
 
+/** Hosted Postgres (Supabase pooler) gets TLS; the local stack on 127.0.0.1 does not. */
+export function sslFor(databaseUrl: string): 'require' | false {
+  const host = new URL(databaseUrl).hostname
+  return host === '127.0.0.1' || host === 'localhost' || host === '::1' ? false : 'require'
+}
+
 export async function migrate(databaseUrl: string, log: (m: string) => void = () => {}): Promise<number> {
-  const sql = postgres(databaseUrl, { max: 1, onnotice: () => {} })
+  const sql = postgres(databaseUrl, { max: 1, onnotice: () => {}, ssl: sslFor(databaseUrl) })
   try {
     await sql.unsafe(`
       create schema if not exists supabase_migrations;

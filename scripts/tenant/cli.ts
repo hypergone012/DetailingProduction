@@ -118,7 +118,9 @@ async function cmdPublish() {
     list('deleted', r.deleted)
     if (!r.created.length && !r.updated.length && !r.deleted.length && !r.deactivated.length) console.log('  no changes (idempotent republish)')
     for (const o of r.owners) {
-      console.log(`  owner ${o.email}: ${o.created ? 'created' : 'exists'}${o.link ? `\n    одноразовая ссылка для установки пароля: ${o.link}` : ''}`)
+      // A GitHub Actions log can be public: a password link must never land there.
+      const link = !o.link ? '' : process.env.GITHUB_ACTIONS ? '\n    ссылка для установки пароля не печатается в лог GitHub Actions; владелец нажимает «Забыли пароль?» на входе в кабинет (нужен SMTP, DEPLOY-IN-BROWSER.md)' : `\n    одноразовая ссылка для установки пароля: ${o.link}`
+      console.log(`  owner ${o.email}: ${o.created ? 'created' : 'exists'}${link}`)
     }
     if (r.status === 'demo' && demoOwnerPassword && r.owners.some((o) => o.created)) {
       console.log(`  demo owner password: ${env.local ? demoOwnerPassword : '(TENANT_DEMO_OWNER_PASSWORD)'}`)

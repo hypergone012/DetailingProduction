@@ -1,5 +1,5 @@
 import type { BookingStatus } from '@dp/core/api/contracts'
-import { AlertTriangle, Bot, CalendarPlus, ChevronRight, Clock } from 'lucide-react'
+import { AlertTriangle, Bot, CalendarPlus, ChevronRight, Clock, QrCode } from 'lucide-react'
 import { Link } from 'react-router'
 import { useChatParam } from '@/components/assistant/chatParam'
 import { ScreenHeader } from '@/components/ScreenHeader'
@@ -37,6 +37,11 @@ export function TodayScreen() {
         wide
         actions={
           <>
+            <Button variant="ghost" size="icon" aria-label="Ссылка и QR-код для клиентов" asChild>
+              <Link to={`/s/${slug}/owner/settings#share`}>
+                <QrCode />
+              </Link>
+            </Button>
             {data.features.ai !== false && (
               <Button variant="ghost" size="icon" aria-label="Помощник" onClick={chat.show}>
                 <Bot />

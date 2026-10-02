@@ -91,7 +91,9 @@ VAPID-ключи: `pnpm push:vapid`.
 
 ## 4. Выкладка (hosted Supabase + статический хостинг)
 
-> Отсюда (облачная среда разработки) выкладка не выполнялась: `api.supabase.com` и хостинги закрыты сетевой политикой. Шаги ниже — инструкция, а не отчёт о выполнении; см. ACCEPTANCE.md.
+> **Проще всего — кнопкой из браузера:** GitHub Actions → **Deploy** (`.github/workflows/deploy.yml`), пошагово для неспециалиста — [DEPLOY-IN-BROWSER.md](DEPLOY-IN-BROWSER.md). Кнопка делает всё из §4.1–4.5 сама: включает Cron, применяет миграции, генерирует серверные секреты один раз и хранит их в Vault, деплоит функции, настраивает Auth, публикует студии, собирает и выкладывает сайт в Cloudflare Pages и проверяет его `tenant:verify`.
+>
+> Ниже — те же шаги вручную. Отсюда (облачная среда разработки) ни кнопка, ни ручная выкладка не выполнялись: `api.supabase.com` и хостинги закрыты сетевой политикой. См. ACCEPTANCE.md.
 
 ### 4.1 База
 
@@ -147,19 +149,18 @@ pnpm security:scan-bundle
 #### Cloudflare Pages
 
 ```bash
-pnpm build && pnpm tenant:shells && pnpm security:scan-bundle
-npx wrangler pages deploy apps/web/dist --project-name <project>   # или Git-интеграция Pages
+pnpm build && pnpm tenant:shells && rm apps/web/dist/_redirects && pnpm security:scan-bundle
+npx wrangler pages deploy apps/web/dist --project-name <project> --branch main
 ```
 
 - **Build output directory:** `apps/web/dist`. Переменные `VITE_SUPABASE_URL` и `VITE_SUPABASE_ANON_KEY` задаются в окружении сборки. **Серверные секреты в Pages не нужны и не должны туда попадать.**
-- `_redirects` пишется в синтаксисе Netlify / Cloudflare Pages (`/s/<slug>/* /s/<slug>/index.html 200`). Для `sw.js` добавьте файл `apps/web/dist/_headers`:
+- **`_redirects` на Cloudflare не используется** (кнопка его удаляет):
+  - оболочка студии лежит в `s/<slug>/index.html` и отдаётся как индекс каталога для `/s/<slug>/` и `/s/<slug>/owner/`;
+  - любой другой путь Pages в режиме SPA (в сборке нет `404.html`) отдаёт корневой `index.html`, и приложение само подставляет название, тему и манифест студии.
 
-  ```
-  /sw.js
-    Cache-Control: no-cache
-  ```
-- **Ограничение Cloudflare Pages** (по документации Cloudflare на момент написания): не больше 100 «динамических» правил с `*`. `tenant:shells` создаёт два таких правила на студию, то есть примерно 49 студий. Студии сверх лимита продолжают работать через общий `index.html`: название, тема и манифест подставляются при загрузке. Пропадают только статические превью ссылок для этих студий. Для большего числа студий нужен Worker / Pages Function с той же логикой перезаписи — **не реализовано**.
-- **Не проверено из этой среды** (сеть закрыта): поведение `_redirects` и `_headers` на настоящих Netlify / Cloudflare Pages. Локально те же правила применяет `vite preview`: плагин `studioShells` в `apps/web/vite.config.ts`. На нём `tenant:verify --app-url` проверяет страницы и оболочки.
+  Так нет лимитов Cloudflare на число правил перезаписи и их проверки на «петли». Для Netlify `_redirects` оставьте — он даёт оболочку студии и на глубоких ссылках.
+- `apps/web/public/_headers` (копируется в сборку): `no-cache` для `sw.js` и оболочек студий, долгий кеш для `assets/*`, базовые заголовки безопасности.
+- **Не проверено из этой среды** (сеть закрыта): поведение Cloudflare Pages / Netlify на настоящем хостинге. Локально правила оболочек применяет `vite preview` (плагин `studioShells` в `apps/web/vite.config.ts`), на нём `tenant:verify --app-url` проверяет страницы и оболочки. Тот же `tenant:verify` кнопка запускает против опубликованного сайта.
 
 ---
 

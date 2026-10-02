@@ -37,7 +37,7 @@ export function GarageScreen() {
           )
         }
       />
-      <div className="mx-auto grid max-w-xl gap-3 px-4 pt-1 pb-8">
+      <div className="mx-auto grid max-w-xl md:max-w-2xl gap-3 px-4 pt-1 pb-8">
         {!profile && isFetching ? (
           <>
             <Skeleton className="h-24 rounded-2xl" />

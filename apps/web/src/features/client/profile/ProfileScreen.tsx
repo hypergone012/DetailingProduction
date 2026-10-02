@@ -51,7 +51,7 @@ export function ProfileScreen() {
   return (
     <>
       <ScreenHeader title="Профиль" large />
-      <div className="mx-auto grid max-w-xl gap-7 px-4 pt-2 pb-8">
+      <div className="mx-auto grid max-w-xl md:max-w-2xl gap-7 px-4 pt-2 pb-8">
         {hasProfile && profile ? <ContactCard key={profile.profile.id} /> : null}
 
         <Section title="Оформление">
