@@ -1,8 +1,10 @@
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import type { Server } from 'node:http'
 import postgres from 'postgres'
 import type { TestProject } from 'vitest/node'
+import { startFakeLlm } from './fake-llm.ts'
 
 /**
  * API tests exercise the real HTTP path: gateway -> Edge Function handler (Deno) ->
@@ -13,7 +15,12 @@ import type { TestProject } from 'vitest/node'
  */
 const ROOT = join(import.meta.dirname, '../..')
 const PORT = 54331
+// Second gateway whose LLM_BASE_URL points at the scripted test double (fake-llm.ts).
+const LLM_GATEWAY_PORT = 54332
+const FAKE_LLM_PORT = 54341
 let gateway: ChildProcess | null = null
+let llmGateway: ChildProcess | null = null
+let fakeLlm: Server | null = null
 
 async function up(url: string): Promise<boolean> {
   try {
@@ -59,24 +66,33 @@ export default async function setup(project: TestProject) {
   // The real binary, not the node shim: killing a shim would leave the server running.
   const deno = join(ROOT, 'node_modules/deno/deno')
   if (await up(`http://127.0.0.1:${PORT}/health`)) throw new Error(`port ${PORT} is busy (a stale test gateway?)`)
-  gateway = spawn(
-    deno,
-    ['run', '--allow-net', '--allow-env', '--allow-read', '--allow-write=.local', `--cert=${f('ca.pem')}`,
-      '--config', 'supabase/functions/deno.json', 'scripts/dev/gateway.ts'],
-    {
-      cwd: ROOT,
-      env: { ...process.env, DP_GATEWAY_PORT: String(PORT), SUPABASE_URL: `http://127.0.0.1:${PORT}`, DISPATCHER_SECRET: dispatcherSecret, TRUSTED_PROXY_HOPS: '1', LLM_API_KEY: '' },
-      stdio: ['ignore', 'pipe', 'pipe'],
-    },
-  )
-  let log = ''
-  gateway.stdout?.on('data', (d: Buffer) => (log += d.toString()))
-  gateway.stderr?.on('data', (d: Buffer) => (log += d.toString()))
-  for (let i = 0; i < 300 && !(await up(`http://127.0.0.1:${PORT}/health`)); i++) await new Promise((r) => setTimeout(r, 100))
-  if (!(await up(`http://127.0.0.1:${PORT}/health`))) throw new Error(`test gateway did not start:\n${log}`)
+  fakeLlm = await startFakeLlm(FAKE_LLM_PORT)
+  const start = async (port: number, extraEnv: Record<string, string>) => {
+    if (await up(`http://127.0.0.1:${port}/health`)) throw new Error(`port ${port} is busy (a stale test gateway?)`)
+    const child = spawn(
+      deno,
+      ['run', '--allow-net', '--allow-env', '--allow-read', '--allow-write=.local', `--cert=${f('ca.pem')}`,
+        '--config', 'supabase/functions/deno.json', 'scripts/dev/gateway.ts'],
+      {
+        cwd: ROOT,
+        env: { ...process.env, DP_GATEWAY_PORT: String(port), SUPABASE_URL: `http://127.0.0.1:${port}`, DISPATCHER_SECRET: dispatcherSecret, TRUSTED_PROXY_HOPS: '1', ...extraEnv },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    )
+    let log = ''
+    child.stdout?.on('data', (d: Buffer) => (log += d.toString()))
+    child.stderr?.on('data', (d: Buffer) => (log += d.toString()))
+    for (let i = 0; i < 300 && !(await up(`http://127.0.0.1:${port}/health`)); i++) await new Promise((r) => setTimeout(r, 100))
+    if (!(await up(`http://127.0.0.1:${port}/health`))) throw new Error(`test gateway :${port} did not start:\n${log}`)
+    return child
+  }
+  gateway = await start(PORT, { LLM_API_KEY: '' })
+  llmGateway = await start(LLM_GATEWAY_PORT, { LLM_API_KEY: 'test-key-not-a-secret', LLM_BASE_URL: `http://127.0.0.1:${FAKE_LLM_PORT}/v1`, LLM_MODEL: 'claude-opus-5-5' })
 
   project.provide('api', {
     gateway: `http://127.0.0.1:${PORT}`,
+    llmGateway: `http://127.0.0.1:${LLM_GATEWAY_PORT}`,
+    fakeLlm: `http://127.0.0.1:${FAKE_LLM_PORT}`,
     anonKey: keys.anonKey,
     serviceKey: keys.serviceRoleKey,
     dispatcherSecret,
@@ -85,6 +101,8 @@ export default async function setup(project: TestProject) {
   })
   return async () => {
     gateway?.kill()
+    llmGateway?.kill()
+    fakeLlm?.close()
     await cleanup()
   }
 }
@@ -106,6 +124,6 @@ async function cleanup() {
 
 declare module 'vitest' {
   export interface ProvidedContext {
-    api: { gateway: string; anonKey: string; serviceKey: string; dispatcherSecret: string; tlsKey: string; tlsCert: string }
+    api: { gateway: string; llmGateway: string; fakeLlm: string; anonKey: string; serviceKey: string; dispatcherSecret: string; tlsKey: string; tlsCert: string }
   }
 }

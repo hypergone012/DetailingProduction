@@ -23,6 +23,7 @@ import { bookingToIcs } from '../_vendor/core/booking/ics.ts'
 import { canonicalJson } from '../_vendor/core/tenant/normalize.ts'
 import { buildManifest } from '../_vendor/core/tenant/manifest.ts'
 import { deriveToken, looksLikeToken, sha256Bytea, sha256Hex } from '../_vendor/core/crypto.ts'
+import { clientKeyHash, slugOf } from '../_shared/client.ts'
 import { config } from '../_shared/env.ts'
 import { corsHeaders, HttpError, idempotencyKey, json, parse, readBytes, readJson, router, type RouteContext } from '../_shared/http.ts'
 import { clientIp, limit } from '../_shared/limits.ts'
@@ -40,20 +41,9 @@ interface TenantRef {
   currency: string
 }
 
-const slugOf = (ctx: RouteContext) => {
-  const s = ctx.params.slug ?? ''
-  if (!/^[a-z0-9-]{1,40}$/.test(s)) throw new HttpError('TENANT_NOT_FOUND', 'Студия не найдена')
-  return s
-}
-
 /** Generous read limit per IP and studio; stricter limits on writes below. */
 async function readLimit(ctx: RouteContext, slug: string) {
   await limit('read', `${slug}:${clientIp(ctx.req)}`, 600, 60)
-}
-
-async function clientKeyHash(req: Request): Promise<string | null> {
-  const key = req.headers.get('x-client-key')
-  return looksLikeToken(key) ? await sha256Bytea(key) : null
 }
 
 async function bookingTokenHash(req: Request): Promise<string | null> {

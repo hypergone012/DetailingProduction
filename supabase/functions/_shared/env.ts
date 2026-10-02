@@ -49,7 +49,7 @@ export function config(): Config {
     trustedProxyHops: Number(get('TRUSTED_PROXY_HOPS') ?? '1'),
     vapid: vapidPublic && vapidPrivate ? { publicKey: vapidPublic, privateKey: vapidPrivate, subject: get('VAPID_SUBJECT') ?? 'mailto:ops@example.com' } : null,
     dispatcherSecret: get('DISPATCHER_SECRET') ?? null,
-    llm: llmKey ? { baseUrl: (get('LLM_BASE_URL') ?? 'https://api.anthropic.com/v1').replace(/\/$/, ''), apiKey: llmKey, model: get('LLM_MODEL') ?? 'claude-sonnet-5-5' } : null,
+    llm: llmKey ? { baseUrl: (get('LLM_BASE_URL') ?? 'https://api.anthropic.com/v1').replace(/\/$/, ''), apiKey: llmKey, model: get('LLM_MODEL') ?? 'claude-opus-5-5' } : null,
   }
   return cached
 }

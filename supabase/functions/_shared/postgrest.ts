@@ -14,6 +14,18 @@ interface PostgrestError {
  *   - with `userJwt`: as that user, so RLS and the owner_* role checks apply.
  * Business errors raised by `private.fail` come back as P0001 with a stable code.
  */
+/** GET /rest/v1/<path> as the signed-in user (RLS applies). */
+export async function select<T>(pathAndQuery: string, userJwt: string): Promise<T[]> {
+  const c = config()
+  const res = await fetch(`${c.supabaseUrl}/rest/v1/${pathAndQuery}`, {
+    headers: { apikey: c.anonKey, authorization: `Bearer ${userJwt}`, accept: 'application/json' },
+  })
+  if (res.ok) return (await res.json()) as T[]
+  if (res.status === 401) throw new HttpError('UNAUTHENTICATED', 'Требуется вход')
+  console.error(`[select ${pathAndQuery.split('?')[0]}] status=${res.status}`)
+  throw new HttpError('INTERNAL')
+}
+
 export async function rpc<T>(fn: string, args: Record<string, unknown>, opts: { userJwt?: string } = {}): Promise<T> {
   const c = config()
   const res = await fetch(`${c.supabaseUrl}/rest/v1/rpc/${fn}`, {
@@ -26,7 +38,11 @@ export async function rpc<T>(fn: string, args: Record<string, unknown>, opts: { 
     },
     body: JSON.stringify(args),
   })
-  if (res.ok) return (await res.json()) as T
+  if (res.ok) {
+    // Functions returning void answer 204 / an empty body.
+    const text = await res.text()
+    return (text ? JSON.parse(text) : null) as T
+  }
   let err: PostgrestError = {}
   try {
     err = (await res.json()) as PostgrestError

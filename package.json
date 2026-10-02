@@ -20,7 +20,7 @@
     "stack": "bash scripts/local/stack.sh",
     "db:migrate": "tsx scripts/db/migrate.ts",
     "functions:vendor": "tsx scripts/dev/vendor-core.ts",
-    "functions:check": "pnpm -s functions:vendor && deno check --config supabase/functions/deno.json supabase/functions/public-api/index.ts supabase/functions/owner-api/index.ts supabase/functions/notify-dispatcher/index.ts scripts/dev/gateway.ts",
+    "functions:check": "pnpm -s functions:vendor && deno check --config supabase/functions/deno.json supabase/functions/public-api/index.ts supabase/functions/owner-api/index.ts supabase/functions/notify-dispatcher/index.ts supabase/functions/assistant/index.ts scripts/dev/gateway.ts",
     "functions:serve": "pnpm -s functions:vendor && deno run --allow-net --allow-env --allow-read --allow-write=.local --config supabase/functions/deno.json scripts/dev/gateway.ts",
     "tenant:new": "tsx scripts/tenant/cli.ts new",
     "tenant:validate": "tsx scripts/tenant/cli.ts validate",
