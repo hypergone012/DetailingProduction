@@ -55,6 +55,7 @@ async function check() {
     accessToken: env.RAW_SUPABASE_ACCESS_TOKEN,
     projectRef: env.RAW_SUPABASE_PROJECT_REF,
     databaseUrl: env.RAW_SUPABASE_DB_URL,
+    dbPassword: env.RAW_SUPABASE_DB_PASSWORD,
     cfApiToken: env.RAW_CLOUDFLARE_API_TOKEN,
     cfAccountId: env.RAW_CLOUDFLARE_ACCOUNT_ID,
     demoPassword: env.RAW_DEMO_OWNER_PASSWORD,
@@ -65,6 +66,7 @@ async function check() {
     for (const p of problems) console.log(`::error::${p}`)
     throw new Error(`Секреты репозитория: ${problems.length} ${problems.length === 1 ? 'ошибка' : 'ошибки'} — исправьте в Settings → Secrets and variables → Actions и запустите снова (подробности выше; DEPLOY-IN-BROWSER.md, шаг 3).`)
   }
+  if (env.RAW_SUPABASE_DB_PASSWORD?.trim()) mask(env.RAW_SUPABASE_DB_PASSWORD.trim())
   for (const value of [inputs.accessToken, inputs.databaseUrl, inputs.cfApiToken, inputs.cfAccountId, inputs.demoPassword, inputs.llmApiKey, inputs.projectRef]) if (value) mask(value)
   for (const w of warnings) console.log(`::warning::${w}`)
   await probeDatabase(inputs.databaseUrl)

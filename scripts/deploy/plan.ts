@@ -122,6 +122,8 @@ export interface RawInputs {
   accessToken?: string
   projectRef?: string
   databaseUrl?: string
+  /** Optional: the database password on its own; it replaces whatever password the string has. */
+  dbPassword?: string
   cfApiToken?: string
   cfAccountId?: string
   demoPassword?: string
@@ -145,6 +147,17 @@ export interface Inputs {
  * the string with the raw password; a password with @ / : ? # would otherwise split the
  * address in the wrong place (the host is whatever follows the *last* @).
  */
+const CONN_RE = /^(postgres(?:ql)?:\/\/)([^:@/]*)(?::(.*))?@([^@]*)$/s
+
+/** Puts `password` into a connection string: over [YOUR-PASSWORD], over an existing password, or where none is. */
+export function withConnectionPassword(conn: string, password: string): string {
+  if (conn.includes('[YOUR-PASSWORD]')) return conn.split('[YOUR-PASSWORD]').join(password)
+  const m = CONN_RE.exec(conn)
+  if (!m) return conn
+  const [, scheme, user, , rest] = m as unknown as [string, string, string, string | undefined, string]
+  return `${scheme}${user}:${password}@${rest}`
+}
+
 export function encodeConnectionPassword(conn: string): string {
   const m = /^(postgres(?:ql)?:\/\/)([^:@/]*):(.*)@([^@]*)$/s.exec(conn)
   if (!m) return conn
@@ -163,7 +176,8 @@ const clean = (v: string | undefined) => (v ?? '').trim().replace(/^["'«](.*)["
 export function normalizeInputs(raw: RawInputs): { inputs: Inputs; problems: string[]; warnings: string[] } {
   const problems: string[] = []
   const warnings: string[] = []
-  const v = Object.fromEntries(Object.entries(raw).map(([k, x]) => [k, clean(x)])) as Record<keyof RawInputs, string>
+  const fields: (keyof RawInputs)[] = ['accessToken', 'projectRef', 'databaseUrl', 'dbPassword', 'cfApiToken', 'cfAccountId', 'demoPassword', 'llmApiKey', 'pagesProject']
+  const v = Object.fromEntries(fields.map((k) => [k, clean(raw[k])])) as Record<keyof RawInputs, string>
 
   // Supabase project ref: 20 lowercase letters, or a dashboard / API address that contains it.
   const ref = /^[a-z]{20}$/.exec(v.projectRef)?.[0] ?? /project\/([a-z]{20})(?![a-z])/.exec(v.projectRef)?.[1] ?? /(?<![a-z])([a-z]{20})\.supabase\.co/.exec(v.projectRef)?.[1] ?? ''
@@ -174,14 +188,26 @@ export function normalizeInputs(raw: RawInputs): { inputs: Inputs; problems: str
   if (!v.accessToken) problems.push('Не задан секрет SUPABASE_ACCESS_TOKEN.')
   else if (!/^sbp_[A-Za-z0-9_]+$/.test(v.accessToken)) problems.push('SUPABASE_ACCESS_TOKEN: токен должен начинаться с «sbp_» (Supabase → аватар → Account preferences → Access Tokens). Ключи anon / service_role и пароль базы сюда не подходят.')
 
-  // Session pooler connection string with the password filled in.
+  // Session pooler connection string with the password filled in: from SUPABASE_DB_PASSWORD
+  // when it is set (no hand-editing of the string), otherwise from the string itself.
   let databaseUrl = ''
-  if (!v.databaseUrl) problems.push('Не задан секрет SUPABASE_DB_URL.')
-  else if (v.databaseUrl.includes('[YOUR-PASSWORD]')) problems.push('SUPABASE_DB_URL: в строке остался шаблон [YOUR-PASSWORD] — замените его (вместе со скобками) на пароль базы.')
+  // Whitespace is removed from the pasted string only; a password from SUPABASE_DB_PASSWORD is inserted as is.
+  let conn = v.databaseUrl.replace(/\s+/g, '')
+  if (conn && v.dbPassword) conn = withConnectionPassword(conn, v.dbPassword)
+  else if (conn) {
+    const pw = CONN_RE.exec(conn)?.[3]
+    if (pw && /^\[.+\]$/.test(pw) && pw !== '[YOUR-PASSWORD]') {
+      conn = withConnectionPassword(conn, pw.slice(1, -1))
+      warnings.push('SUPABASE_DB_URL: вокруг пароля стояли квадратные скобки — убрал их (пароль вставляется без скобок).')
+    }
+  }
+  if (!conn) problems.push('Не задан секрет SUPABASE_DB_URL.')
+  else if (conn.includes('[YOUR-PASSWORD]'))
+    problems.push('SUPABASE_DB_URL: в строке остался шаблон [YOUR-PASSWORD]. Проще всего добавить отдельный секрет SUPABASE_DB_PASSWORD с паролем базы — кнопка сама подставит его в строку.')
   else {
     let url: URL | null = null
     try {
-      url = new URL(encodeConnectionPassword(v.databaseUrl.replace(/\s+/g, '')))
+      url = new URL(encodeConnectionPassword(conn))
     } catch {
       problems.push('SUPABASE_DB_URL: строку не удалось разобрать. Скопируйте её заново (Connect → Session pooler); если в пароле базы есть символы @ : / ? # %, смените пароль на буквы и цифры (Project Settings → Database → Reset database password).')
     }
@@ -190,14 +216,14 @@ export function normalizeInputs(raw: RawInputs): { inputs: Inputs; problems: str
       if (!/^postgres(ql)?:$/.test(url.protocol)) problems.push('SUPABASE_DB_URL: строка должна начинаться с postgresql:// (Connect → Connection String → Session pooler).')
       else if (/^db\..+\.supabase\.co$/.test(host)) problems.push('SUPABASE_DB_URL: это строка «Direct connection». Нужна строка из блока «Session pooler» (Connect → Session pooler), в ней адрес …pooler.supabase.com:5432.')
       else if (url.port === '6543') problems.push('SUPABASE_DB_URL: это «Transaction pooler» (порт 6543). Нужен «Session pooler» — порт 5432.')
-      else if (!url.password) problems.push('SUPABASE_DB_URL: в строке нет пароля — после «postgres.<ref>:» должен идти пароль базы, затем «@».')
+      else if (!url.password) problems.push('SUPABASE_DB_URL: в строке нет пароля. Добавьте секрет SUPABASE_DB_PASSWORD с паролем базы — кнопка сама подставит его в строку.')
       else if (host.endsWith('.pooler.supabase.com') && ref && decodeURIComponent(url.username) !== `postgres.${ref}`)
         problems.push('SUPABASE_DB_URL: строка подключения от другого проекта, чем SUPABASE_PROJECT_REF (в начале строки должно быть postgres.<ваш ref>).')
       else {
         // An unfamiliar host is not rejected (Supabase may change its pooler addresses): the
         // connection probe that follows tells whether it works. Host and port are not secret.
         if (!host.endsWith('.pooler.supabase.com')) warnings.push(`SUPABASE_DB_URL: необычный адрес базы «${host}:${url.port || '5432'}» — ожидался …pooler.supabase.com:5432 (Connect → Session pooler). Пробую подключиться.`)
-        databaseUrl = encodeConnectionPassword(v.databaseUrl.replace(/\s+/g, ''))
+        databaseUrl = encodeConnectionPassword(conn)
       }
     }
   }
@@ -252,7 +278,7 @@ export function explainDbError(e: unknown, databaseUrl: string): string {
   const message = password ? raw.split(password).join('***') : raw
   const where = host ? ` (${host}:${port})` : ''
   if (err.code === '28P01' || /password authentication failed/i.test(raw))
-    return `SUPABASE_DB_URL: база отклонила пароль${where}. Проверьте пароль в строке. Если не помните — Supabase → Project Settings → Database → Reset database password (только буквы и цифры), вставьте новый пароль в строку и обновите секрет.`
+    return `База отклонила пароль${where}: пароль в SUPABASE_DB_URL / SUPABASE_DB_PASSWORD не совпадает с паролем базы. Supabase → Project Settings → Database → Reset database password → задайте новый пароль и сохраните его в секрет SUPABASE_DB_PASSWORD (строку SUPABASE_DB_URL при этом менять не нужно — кнопка подставит пароль сама).`
   if (/tenant or user not found/i.test(raw))
     return `SUPABASE_DB_URL: сервер не узнал пользователя${where}. В строке Session pooler имя пользователя — postgres.<ваш ref>. Скопируйте строку заново: Connect → Session pooler.`
   if (err.code === 'ENOTFOUND' || err.code === 'EAI_AGAIN') return `SUPABASE_DB_URL: сервер базы «${host}» не найден. Скопируйте строку заново: Connect → Session pooler.`

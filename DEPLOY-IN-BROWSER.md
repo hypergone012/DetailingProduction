@@ -27,7 +27,7 @@
 |---|---|---|
 | 1 | Пароль базы | 16–20 латинских букв и цифр |
 | 2 | `SUPABASE_PROJECT_REF` | 20 строчных латинских букв, например `abcdefghijklmnopqrst` |
-| 3 | `SUPABASE_DB_URL` | `postgresql://postgres.abcdefghijklmnopqrst:ПАРОЛЬ@aws-0-eu-central-1.pooler.supabase.com:5432/postgres` |
+| 3 | `SUPABASE_DB_URL` | `postgresql://postgres.abcdefghijklmnopqrst:[YOUR-PASSWORD]@aws-1-eu-central-1.pooler.supabase.com:5432/postgres` — как показывает Supabase |
 | 4 | `SUPABASE_ACCESS_TOKEN` | начинается с `sbp_` |
 | 5 | `CLOUDFLARE_ACCOUNT_ID` | 32 символа: цифры и буквы a–f |
 | 6 | `CLOUDFLARE_API_TOKEN` | около 40 символов |
@@ -72,11 +72,9 @@
 3. Найдите блок **Session pooler** — не «Direct connection» и не «Transaction pooler». Если вместо блоков есть выпадающий список **Method**, выберите в нём **Session pooler**.
 4. Скопируйте строку. Она вида
    `postgresql://postgres.abcdefghijklmnopqrst:[YOUR-PASSWORD]@aws-0-eu-central-1.pooler.supabase.com:5432/postgres`.
-5. В блокноте замените `[YOUR-PASSWORD]` вместе с квадратными скобками на пароль №1.
-   - Было: `…postgres.abcd…:[YOUR-PASSWORD]@aws-0…`
-   - Стало: `…postgres.abcd…:Kq7mP2x9Lw4nZ8vB@aws-0…`
+5. **Ничего в строке не меняйте**: `[YOUR-PASSWORD]` оставьте как есть. Пароль №1 вы положите в GitHub отдельным секретом `SUPABASE_DB_PASSWORD`, и кнопка сама подставит его в строку. Так не будет ошибок с забытыми скобками или спецсимволами в пароле.
 
-   Проверьте, что пробелов нет, а в строке есть `pooler.supabase.com:5432`.
+   Проверьте, что в строке есть `pooler.supabase.com:5432`.
 
 ### 1.5 Токен доступа (значение №4)
 
@@ -128,7 +126,7 @@
 
 ---
 
-## Шаг 3. GitHub — положить семь значений в «секреты»
+## Шаг 3. GitHub — положить значения в «секреты»
 
 1. Откройте **https://github.com/hypergone012/DetailingProduction** (вы должны быть вошедшим владельцем).
 2. Вверху вкладка **Settings** (шестерёнка). Если её не видно, нажмите «⋯» справа от вкладок.
@@ -137,20 +135,21 @@
    - **Name** — название из блокнота **точно так**: латиницей, заглавными, с подчёркиваниями;
    - **Secret** — значение из блокнота;
    - нажмите **Add secret**.
-5. Повторите для всех шести:
+5. Повторите для всех семи:
 
 | Name | Значение из блокнота |
 |---|---|
 | `SUPABASE_PROJECT_REF` | №2 |
-| `SUPABASE_DB_URL` | №3, **уже с паролем вместо `[YOUR-PASSWORD]`** |
+| `SUPABASE_DB_URL` | №3 — строка как есть, с `[YOUR-PASSWORD]` |
+| `SUPABASE_DB_PASSWORD` | №1 — пароль базы |
 | `SUPABASE_ACCESS_TOKEN` | №4 |
 | `CLOUDFLARE_ACCOUNT_ID` | №5 |
 | `CLOUDFLARE_API_TOKEN` | №6 |
 | `DEMO_OWNER_PASSWORD` | №7 |
 
-**Пароль базы №1 отдельным секретом добавлять не нужно**: он уже внутри строки №3.
+Если вы раньше вставили пароль прямо в строку `SUPABASE_DB_URL` — ничего страшного: при заданном `SUPABASE_DB_PASSWORD` кнопка берёт пароль оттуда.
 
-В итоге в списке **Repository secrets** — шесть названий. Значения после сохранения не показываются, так и должно быть. Ошиблись — нажмите на секрет → **Update secret**.
+В итоге в списке **Repository secrets** — семь названий. Значения после сохранения не показываются, так и должно быть. Ошиблись — нажмите на секрет → **Update secret**.
 
 Необязательный седьмой секрет `LLM_API_KEY` подключает умный помощник, см. шаг 7.4. Без него помощник отвечает по шаблонам.
 
@@ -176,8 +175,8 @@
 | Сообщение | Что сделать |
 |---|---|
 | «Не заданы секреты: …» | секрета нет или название с опечаткой (шаг 3) |
-| «В SUPABASE_DB_URL остался шаблон [YOUR-PASSWORD]» | вставьте пароль в строку, обновите секрет |
-| `password authentication failed` | пароль в строке неверный. Supabase → **Project Settings → Database → Reset database password** → новый пароль из букв и цифр → вставьте в строку №3 → обновите секрет `SUPABASE_DB_URL` |
+| «В SUPABASE_DB_URL остался шаблон [YOUR-PASSWORD]» | добавьте секрет `SUPABASE_DB_PASSWORD` с паролем базы |
+| «База отклонила пароль» / `password authentication failed` | пароль не тот. Supabase → **Project Settings → Database → Reset database password** → задайте новый, скопируйте → GitHub: секрет `SUPABASE_DB_PASSWORD` = новый пароль (строку `SUPABASE_DB_URL` менять не нужно) |
 | `Tenant or user not found` / `ENOTFOUND` | строка скопирована не из **Session pooler** или не целиком — скопируйте заново (шаг 1.4) |
 | «включите Legacy API keys» | шаг 1.6 |
 | Cloudflare: `Invalid account ID` / «CLOUDFLARE_ACCOUNT_ID: нужен Account ID — 32 символа» | в секрете не Account ID: почта, токен или пробел внутри. Скопируйте 32 символа из адреса страницы Cloudflare (шаг 2.2) |

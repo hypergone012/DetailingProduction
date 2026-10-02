@@ -169,3 +169,37 @@ describe('connection string with special characters in the password', () => {
     expect(r.inputs.databaseUrl).toBe(base(encodeURIComponent('Xx@9y/Zz')))
   })
 })
+
+describe('database password from its own secret', () => {
+  const tpl = 'postgresql://postgres.abcdefghijklmnopqrst:[YOUR-PASSWORD]@aws-1-eu-central-1.pooler.supabase.com:5432/postgres'
+  const others = {
+    accessToken: `sbp_${'test'.repeat(10)}`,
+    projectRef: 'abcdefghijklmnopqrst',
+    cfApiToken: 'AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-Ab',
+    cfAccountId: '0123456789abcdef0123456789abcdef',
+    demoPassword: 'demo-pass-2026',
+    pagesProject: 'detailing-studio',
+  }
+  const pwOf = (url: string) => decodeURIComponent(new URL(url).password)
+
+  it('fills [YOUR-PASSWORD] or replaces a wrong password in the string; special characters survive', () => {
+    for (const databaseUrl of [tpl, tpl.replace('[YOUR-PASSWORD]', 'old@wrong/pw'), tpl.replace(':[YOUR-PASSWORD]', '')]) {
+      const r = normalizeInputs({ ...others, databaseUrl, dbPassword: ' N3w@pass/w0rd#x ' })
+      expect(r.problems).toEqual([])
+      expect(new URL(r.inputs.databaseUrl).hostname).toBe('aws-1-eu-central-1.pooler.supabase.com')
+      expect(pwOf(r.inputs.databaseUrl)).toBe('N3w@pass/w0rd#x')
+    }
+  })
+
+  it('without the separate secret: [YOUR-PASSWORD] is explained, brackets around a password are removed', () => {
+    expect(normalizeInputs({ ...others, databaseUrl: tpl }).problems.join(' ')).toMatch(/SUPABASE_DB_PASSWORD/)
+    const r = normalizeInputs({ ...others, databaseUrl: tpl.replace('[YOUR-PASSWORD]', '[Kq7mP2x9]') })
+    expect(r.problems).toEqual([])
+    expect(pwOf(r.inputs.databaseUrl)).toBe('Kq7mP2x9')
+    expect(r.warnings.join(' ')).toMatch(/квадратные скобки/)
+  })
+
+  it('wrong password advice points to SUPABASE_DB_PASSWORD', () => {
+    expect(explainDbError({ code: '28P01', message: 'password authentication failed' }, tpl.replace('[YOUR-PASSWORD]', 'x'))).toMatch(/SUPABASE_DB_PASSWORD/)
+  })
+})
