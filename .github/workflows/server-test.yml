@@ -111,6 +111,18 @@ jobs:
           curl -sk -o /dev/null -w '%{http_code}\n' https://localhost/assets/nope.js | grep -qx 404
           curl -sk -o /dev/null -w '%{http_code}\n' https://localhost/_headers | grep -qx 404
           curl -sk --compressed -D - -o /dev/null https://localhost/s/graphite/ | grep -i -E '^(cache-control|strict-transport-security|content-encoding)'
+          # Password guessing is cut off per address (GoTrue behind Caddy: X-Forwarded-For).
+          anon="$(sudo sed -n 's/^DP_ANON_KEY=//p' /etc/dp/secrets.env)"
+          codes=""
+          for i in $(seq 1 40); do
+            codes="$codes $(curl -sk -o /dev/null -w '%{http_code}' -H "apikey: $anon" -H 'content-type: application/json' \
+              --data '{"email":"owner@graphite-detailing.test","password":"wrong-password"}' 'https://localhost/auth/v1/token?grant_type=password')"
+          done
+          echo "sign-in attempts:$codes"
+          echo "$codes" | grep -q 429
+          # A forged X-Forwarded-For does not get around it: Caddy replaces the header.
+          test "$(curl -sk -o /dev/null -w '%{http_code}' -H "apikey: $anon" -H 'x-forwarded-for: 203.0.113.9' -H 'content-type: application/json' \
+            --data '{"email":"owner@graphite-detailing.test","password":"wrong-password"}' 'https://localhost/auth/v1/token?grant_type=password')" = 429
 
       - name: Logs
         if: failure()

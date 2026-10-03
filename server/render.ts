@@ -102,6 +102,11 @@ export function renderServer(secrets: Record<SecretKey, string>, cfg: ServerConf
     GOTRUE_EXTERNAL_EMAIL_ENABLED: 'true',
     GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: 'false',
     GOTRUE_LOG_LEVEL: 'warn',
+    // Per-visitor limits (sign-in attempts included) need the visitor's address: Caddy
+    // replaces X-Forwarded-For with it, so it cannot be forged. Without this header GoTrue
+    // applies no per-IP limit at all. 30 sign-ins per 5 minutes per address, as hosted.
+    GOTRUE_RATE_LIMIT_HEADER: 'X-Forwarded-For',
+    GOTRUE_RATE_LIMIT_TOKEN_REFRESH: '30',
   }
   if (cfg.smtp) {
     Object.assign(auth, {

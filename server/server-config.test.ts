@@ -57,6 +57,8 @@ describe('server config', () => {
     expect(auth.GOTRUE_SITE_URL).toBe('"https://app.example.ru"')
     expect(auth.GOTRUE_DISABLE_SIGNUP).toBe('"true"')
     expect(auth.GOTRUE_JWT_ISSUER).toBe('"https://app.example.ru/auth/v1"')
+    // Sign-in attempts are limited per visitor address.
+    expect(auth.GOTRUE_RATE_LIMIT_HEADER).toBe('"X-Forwarded-For"')
     // Every service listens on the loopback interface only.
     for (const f of ['auth.env', 'rest.env', 'storage.env', 'gateway.env']) expect(files[f]).not.toMatch(/0\.0\.0\.0/)
     expect(files.Caddyfile).toContain('app.example.ru {')
