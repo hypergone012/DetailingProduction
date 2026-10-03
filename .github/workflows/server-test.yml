@@ -11,6 +11,7 @@ on:
       - 'server/**'
       - 'deploy/server/**'
       - 'scripts/server/**'
+      - 'tests/e2e/**'
       - '.github/workflows/server-test.yml'
 
 permissions:
@@ -93,11 +94,18 @@ jobs:
           sudo systemctl start dp-dispatch.service dp-housekeeping.service dp-backup.service
           for u in dp-dispatch dp-housekeeping dp-backup; do systemctl show -p Result --value "$u.service" | grep -qx success; done
           sudo ls -l /var/backups/dp
-          sudo sh -c 'pg_restore --list /var/backups/dp/db-*.dump | grep -c "TABLE DATA"'
+          # The dump restores into an empty database with the same rows (deploy/server/RESTORE.md).
+          dump="$(sudo sh -c 'ls -1 /var/backups/dp/db-*.dump | tail -1')"
+          sudo -u postgres createdb dp_restore_check
+          sudo cat "$dump" | sudo -u postgres pg_restore --exit-on-error -d dp_restore_check
+          q="select concat_ws('/', (select count(*) from public.bookings), (select count(*) from auth.users), (select count(*) from storage.objects))"
+          test "$(sudo -u postgres psql -XtAq -d dp -c "$q")" = "$(sudo -u postgres psql -XtAq -d dp_restore_check -c "$q")"
+          sudo -u postgres dropdb dp_restore_check
           systemctl list-timers 'dp-*' --no-pager
           # Only Caddy (80, 443) and SSH face the network; every platform service is on 127.0.0.1.
           sudo ss -ltnpH | tee listeners.txt
-          if grep -E 'gotrue|postgrest|"node"|"deno"|postgres' listeners.txt | grep -vE '127\.0\.0\.1:|\[::1\]:'; then echo "a platform service listens beyond loopback"; exit 1; fi
+          if grep -E ':(5432|54321|54324|54325|54326|54425|54426) ' listeners.txt | grep -vE ' (127\.0\.0\.1|\[::1\]):'; then echo "a platform service listens beyond loopback"; exit 1; fi
+          test "$(grep -cE ':(5432|54321|54324|54325|54326|54425) ' listeners.txt)" -ge 6
           grep -E ':(80|443) .*caddy' listeners.txt
           # Old scripts stay loadable for one more build; missing files are real 404s.
           curl -sk -o /dev/null -w '%{http_code}\n' https://localhost/assets/nope.js | grep -qx 404

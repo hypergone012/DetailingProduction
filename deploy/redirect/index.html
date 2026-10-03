@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Сайт переехал</title>
+<script>
+  // The same page on the new address: /s/<studio>/..., booking links and query strings included.
+  location.replace('__NEW_ORIGIN__' + location.pathname + location.search + location.hash)
+</script>
+<style>body{font:16px/1.5 system-ui,sans-serif;background:#0e0f11;color:#f2f0eb;display:grid;place-items:center;min-height:100vh;margin:0;padding:16px;text-align:center}a{color:#7cc4ff}</style>
+</head>
+<body>
+<p>Сайт переехал на новый адрес.<br><a id="go" href="__NEW_ORIGIN__/">Открыть новый сайт</a></p>
+<script>document.getElementById('go').href = '__NEW_ORIGIN__' + location.pathname + location.search + location.hash</script>
+</body>
+</html>

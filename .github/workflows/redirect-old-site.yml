@@ -1,0 +1,45 @@
+# After the move to your own server (Deploy server (Russia), DEPLOY-RU.md step 6): the old
+# Cloudflare Pages address sends every page to the same page on the new address, and the
+# installed app's old service worker removes itself. Bookings can no longer reach the old
+# Supabase project through the old site.
+name: Redirect old site
+
+on:
+  workflow_dispatch:
+    inputs:
+      new_url:
+        description: 'Новый адрес сайта (например https://app.studio.ru)'
+        required: true
+      pages_project:
+        description: 'Имя старого проекта Cloudflare Pages'
+        required: true
+        default: 'detailing-studio'
+
+permissions:
+  contents: read
+
+jobs:
+  redirect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      NEW_URL: ${{ inputs.new_url }}
+      PAGES_PROJECT: ${{ inputs.pages_project }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Переадресация
+        shell: bash
+        run: |
+          origin="$(node -e 'const u = new URL(process.env.NEW_URL); if (u.protocol !== "https:") throw new Error("нужен адрес https://"); console.log(u.origin)')"
+          mkdir -p out
+          sed "s#__NEW_ORIGIN__#$origin#g" deploy/redirect/index.html > out/index.html
+          cp deploy/redirect/sw.js deploy/redirect/_headers out/
+          echo "все страницы -> $origin"
+      - name: Выкладка в Cloudflare Pages
+        shell: bash
+        run: npx -y wrangler@4.146.0 pages deploy out --project-name "$PAGES_PROJECT" --branch main --commit-dirty=true
