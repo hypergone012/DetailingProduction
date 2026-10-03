@@ -1,0 +1,27 @@
+# Network path diagnostics for a published studio page: DNS, TLS, HTTP/3, CDN headers and full
+# downloads from the runner, then the same URLs from probes inside Russia (Globalping,
+# check-host.net). Read the result in the run's Summary. Prints only public facts.
+name: Diagnose network
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'Адрес страницы студии'
+        required: true
+        default: 'https://detailing-studio-6wl.pages.dev/s/graphite/'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Diagnose
+        run: node scripts/ops/net-diagnose.mjs "${{ inputs.url }}"
