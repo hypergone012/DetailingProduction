@@ -1,8 +1,13 @@
 import type { Bootstrap } from '@dp/core/api/contracts'
 import { addDays, dayParts, today } from '@/lib/format'
 
+const clocks = new Map<string, Intl.DateTimeFormat>()
+
 function localNow(tz: string): { day: string; minutes: number } {
-  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date())
+  // Creating an Intl formatter is slow (tens of ms on a phone): one per timezone, reused.
+  let clock = clocks.get(tz)
+  if (!clock) clocks.set(tz, (clock = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })))
+  const parts = clock.formatToParts(new Date())
   const h = Number(parts.find((p) => p.type === 'hour')?.value ?? 0)
   const m = Number(parts.find((p) => p.type === 'minute')?.value ?? 0)
   return { day: today(tz), minutes: h * 60 + m }

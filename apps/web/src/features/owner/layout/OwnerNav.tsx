@@ -13,7 +13,7 @@ export function OwnerNav() {
   return (
     <nav
       aria-label="Разделы кабинета"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg-elevated/95 backdrop-blur-sm md:inset-y-0 md:right-auto md:w-[88px] md:border-t-0 md:border-r md:pt-[calc(var(--dp-safe-top)+12px)]"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg-elevated/95 md:inset-y-0 md:backdrop-blur-sm md:right-auto md:w-[88px] md:border-t-0 md:border-r md:pt-[calc(var(--dp-safe-top)+12px)]"
       style={{ paddingBottom: 'var(--dp-safe-bottom)' }}
     >
       <ul className="mx-auto grid h-[var(--dp-nav-height)] max-w-xl grid-cols-5 px-1 md:h-auto md:grid-cols-1 md:gap-1 md:px-2">

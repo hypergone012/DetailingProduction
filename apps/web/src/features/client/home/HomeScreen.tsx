@@ -1,6 +1,7 @@
+import { HERO_IMAGE_SIZES } from '@dp/core/tenant/constants'
 import { useQuery } from '@tanstack/react-query'
-import { m, useScroll, useTransform, type Variants } from 'motion/react'
-import { useRef, type ReactNode } from 'react'
+import { m, type Variants } from 'motion/react'
+import type { ReactNode } from 'react'
 import { ArrowRight, Bot, CalendarClock, CalendarPlus, CarFront, ChevronRight, Clock, ListChecks, MapPin, Navigation, Phone, Sparkles } from 'lucide-react'
 import { Link } from 'react-router'
 import { Img } from '@/components/Img'
@@ -9,9 +10,9 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { dayParts, duration, money, phonePretty, today, when } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { CountUp, RevealGroup, RevealItem } from '@/motion/Reveal'
+import { BLUR, CountUp, RevealGroup, RevealItem } from '@/motion/Reveal'
 import { Stagger, StaggerItem } from '@/motion/Stagger'
-import { ease } from '@/motion/tokens'
+import { ease, move, settled } from '@/motion/tokens'
 import { useTenant } from '@/tenant/TenantProvider'
 import { useChatParam } from '@/components/assistant/chatParam'
 import { useBookingFlow } from '../booking/flow'
@@ -20,7 +21,7 @@ import { suggestionText } from '../garage/suggestions'
 import { Card, Section } from '@/components/Section'
 import { StatusBadge } from '@/components/StatusBadge'
 import { VehicleGlyph } from '@/components/VehicleGlyph'
-import { SiteSection, useIsDesktop, useStillMotion } from '../layout/site'
+import { SiteSection } from '../layout/site'
 import { WEEKDAY_NAMES, openStatus } from '../shared/hours'
 
 /** Buttons over the cover photo (desktop): light on any theme, the photo is darkened under them. */
@@ -56,13 +57,18 @@ export function HomeScreen() {
 }
 
 const heroGroup: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.12, delayChildren: 0.2 } } }
-const heroItem: Variants = {
-  hidden: { opacity: 0, y: 24, filter: 'blur(10px)' },
-  show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.9, ease: ease.out } },
-}
+const heroItem: Variants = BLUR
+  ? {
+      hidden: { opacity: 0, transform: move(0, 24), filter: 'blur(10px)' },
+      show: { opacity: 1, ...settled, filter: 'blur(0px)', transition: { duration: 0.9, ease: ease.out } },
+    }
+  : {
+      hidden: { opacity: 0, transform: move(0, 24) },
+      show: { opacity: 1, ...settled, transition: { duration: 0.8, ease: ease.out } },
+    }
 const factItem: Variants = {
-  hidden: { opacity: 0, x: 36 },
-  show: { opacity: 1, x: 0, transition: { duration: 0.9, ease: ease.out } },
+  hidden: { opacity: 0, transform: move(36) },
+  show: { opacity: 1, ...settled, transition: { duration: 0.9, ease: ease.out } },
 }
 
 function StudioHero() {
@@ -72,32 +78,24 @@ function StudioHero() {
   const logo = mediaByKey(data.branding.logoKey) ?? mediaFor('logo')[0]
   const status = openStatus(data)
   const cheapest = data.services.length ? Math.min(...data.services.map(minPrice)) : null
-  const still = useStillMotion()
-  const desktop = useIsDesktop()
-  // Depth on scroll: the photo drifts slower than the page, the text lifts and fades (desktop).
-  const ref = useRef<HTMLElement>(null)
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
-  const photoY = useTransform(scrollYProgress, [0, 1], ['0%', '14%'])
-  const textY = useTransform(scrollYProgress, [0, 1], [0, -70])
-  const textFade = useTransform(scrollYProgress, [0, 0.9], [1, 0.15])
+  // Depth on scroll (hero-parallax-* in globals.css): the photo drifts slower than the page, the
+  // text lifts and fades (desktop). Scroll-driven CSS animations: the browser runs them on the
+  // GPU, no JavaScript and no layout reads while scrolling or while the page builds up.
   return (
-    <header ref={ref} className="relative lg:overflow-hidden lg:rounded-[28px] lg:border lg:border-line lg:shadow-[0_40px_80px_-40px_rgb(0_0_0/0.6)]">
+    <header className="hero-timeline relative lg:overflow-hidden lg:rounded-[28px] lg:border lg:border-line lg:shadow-[0_40px_80px_-40px_rgb(0_0_0/0.6)]">
       <div className="relative aspect-[16/9] max-h-[320px] w-full overflow-hidden bg-sunken lg:aspect-auto lg:h-[clamp(480px,68vh,680px)] lg:max-h-none">
-        <m.div className="absolute inset-0" style={still ? undefined : { y: photoY }}>
-          <m.div className="size-full" initial={{ scale: 1.2 }} animate={{ scale: 1.1 }} transition={{ duration: 2.6, ease: ease.out }}>
-            <Img media={hero} priority sizes="(min-width: 1024px) min(1376px, 100vw), 100vw" className="size-full" alt={data.branding.heroAlt ?? ''} />
+        <div className="hero-parallax-photo absolute inset-0">
+          <m.div className="size-full" initial={{ transform: 'scale(1.2)' }} animate={{ transform: 'scale(1.1)' }} transition={{ duration: 2.6, ease: ease.out }}>
+            <Img media={hero} priority sizes={HERO_IMAGE_SIZES} className="size-full" alt={data.branding.heroAlt ?? ''} />
           </m.div>
-        </m.div>
+        </div>
         <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-bg via-bg/75 to-transparent lg:hidden" aria-hidden />
         <div
           className="absolute inset-0 hidden bg-[linear-gradient(to_top,rgb(0_0_0/0.9),rgb(0_0_0/0.38)_48%,rgb(0_0_0/0.1)),linear-gradient(to_right,rgb(0_0_0/0.6),transparent_62%)] lg:block"
           aria-hidden
         />
       </div>
-      <m.div
-        className="relative -mt-8 px-4 lg:absolute lg:inset-x-0 lg:bottom-0 lg:mt-0 lg:p-12"
-        style={still || !desktop ? undefined : { y: textY, opacity: textFade }}
-      >
+      <div className="hero-parallax-text relative -mt-8 px-4 lg:absolute lg:inset-x-0 lg:bottom-0 lg:mt-0 lg:p-12">
         <m.div variants={heroGroup} initial="hidden" animate="show" className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10">
           <div className="grid gap-2 lg:gap-5">
             <m.div variants={heroItem} className="flex items-center gap-3 lg:gap-5">
@@ -164,7 +162,7 @@ function StudioHero() {
             </Fact>
           </m.dl>
         </m.div>
-      </m.div>
+      </div>
     </header>
   )
 }

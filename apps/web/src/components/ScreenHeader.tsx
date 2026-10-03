@@ -44,7 +44,7 @@ export function ScreenHeader({
   return (
     <header
       className={cn(
-        'sticky top-0 z-30 border-b bg-bg/95 backdrop-blur-sm transition-colors',
+        'sticky top-0 z-30 border-b bg-bg/95 transition-colors md:backdrop-blur-sm',
         scrolled ? 'border-line' : 'border-transparent',
         site && 'lg:static lg:border-transparent lg:bg-transparent lg:backdrop-blur-none',
       )}

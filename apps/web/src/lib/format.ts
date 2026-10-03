@@ -13,13 +13,16 @@ function dtf(locale: string, options: Intl.DateTimeFormatOptions): Intl.DateTime
   return f
 }
 
+const numbers = new Map<string, Intl.NumberFormat>()
+
 export function money(cents: number, currency: string, locale = 'ru-RU'): string {
   const value = Number(cents) / 100
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: Number.isInteger(value) ? 0 : 2,
-  }).format(value)
+  const digits = Number.isInteger(value) ? 0 : 2
+  // Reused per locale/currency: a new formatter per call costs a lot in long lists and count-ups.
+  const key = `${locale}|${currency}|${digits}`
+  let f = numbers.get(key)
+  if (!f) numbers.set(key, (f = new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: digits })))
+  return f.format(value)
 }
 
 /** YYYY-MM-DD of an instant in a timezone. */

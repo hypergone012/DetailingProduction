@@ -19,9 +19,13 @@ export function TopNav() {
   const [scrolled, setScrolled] = useState(false)
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 12)
-    on()
+    // First read after the page has laid out, not in the middle of building it.
+    const id = requestAnimationFrame(on)
     window.addEventListener('scroll', on, { passive: true })
-    return () => window.removeEventListener('scroll', on)
+    return () => {
+      cancelAnimationFrame(id)
+      window.removeEventListener('scroll', on)
+    }
   }, [])
   return (
     <nav

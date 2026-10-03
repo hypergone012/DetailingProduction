@@ -46,6 +46,15 @@ async function readLimit(ctx: RouteContext, slug: string) {
   await limit('read', `${slug}:${clientIp(ctx.req)}`, 600, 60)
 }
 
+/**
+ * Reads only: the rate-limit hit and the read itself run at the same time (one database round
+ * trip instead of two). Over the limit, the read result is dropped and the request is refused.
+ */
+async function limited<T>(gate: Promise<void>, read: () => Promise<T>): Promise<T> {
+  const [, data] = await Promise.all([gate, read()])
+  return data
+}
+
 async function bookingTokenHash(req: Request): Promise<string | null> {
   const token = req.headers.get('x-booking-token')
   return looksLikeToken(token) ? await sha256Bytea(token) : null
@@ -61,8 +70,7 @@ const tenantRef = (slug: string) => rpc<TenantRef>('api_public_tenant_ref', { p_
 
 async function bootstrap(ctx: RouteContext) {
   const slug = slugOf(ctx)
-  await readLimit(ctx, slug)
-  const data = await rpc<Bootstrap>('api_public_bootstrap', { p_slug: slug })
+  const data = await limited(readLimit(ctx, slug), () => rpc<Bootstrap>('api_public_bootstrap', { p_slug: slug }))
   await decorateMedia(data.media)
   const c = config()
   data.capabilities = { ai: Boolean(c.llm) && data.features.ai !== false, push: Boolean(c.vapid) && data.features.push !== false }
@@ -71,8 +79,7 @@ async function bootstrap(ctx: RouteContext) {
 
 async function manifest(ctx: RouteContext) {
   const slug = slugOf(ctx)
-  await readLimit(ctx, slug)
-  const data = await rpc<Bootstrap>('api_public_bootstrap', { p_slug: slug })
+  const data = await limited(readLimit(ctx, slug), () => rpc<Bootstrap>('api_public_bootstrap', { p_slug: slug }))
   const icon = data.media.find((m) => m.kind === 'icon')
   const app = ctx.url.searchParams.get('app') === 'owner' ? 'owner' : 'client'
   const body = buildManifest(
@@ -99,17 +106,18 @@ async function manifest(ctx: RouteContext) {
 
 async function availability(ctx: RouteContext) {
   const slug = slugOf(ctx)
-  await readLimit(ctx, slug)
   const q = parse(availabilityQuerySchema, Object.fromEntries(ctx.url.searchParams))
-  const data = await rpc('api_public_availability', {
-    p_slug: slug,
-    p_service_id: q.service_id,
-    p_body_type: q.body_type ?? null,
-    p_addon_ids: q.addon_ids,
-    p_from_day: q.from,
-    p_days: q.days,
-    p_ignore_booking: q.ignore_booking ?? null,
-  })
+  const data = await limited(readLimit(ctx, slug), () =>
+    rpc('api_public_availability', {
+      p_slug: slug,
+      p_service_id: q.service_id,
+      p_body_type: q.body_type ?? null,
+      p_addon_ids: q.addon_ids,
+      p_from_day: q.from,
+      p_days: q.days,
+      p_ignore_booking: q.ignore_booking ?? null,
+    }),
+  )
   return json(ctx.req, data)
 }
 
@@ -192,8 +200,8 @@ async function manageLimit(ctx: RouteContext, slug: string) {
 
 async function getBooking(ctx: RouteContext) {
   const slug = slugOf(ctx)
-  await manageLimit(ctx, slug)
-  const data = await rpc<BookingResponse>('api_public_booking', { p_slug: slug, ...(await clientAuth(ctx)) })
+  const auth = await clientAuth(ctx)
+  const data = await limited(manageLimit(ctx, slug), () => rpc<BookingResponse>('api_public_booking', { p_slug: slug, ...auth }))
   await decorateMedia(data.media)
   return json(ctx.req, data)
 }
@@ -228,18 +236,18 @@ async function cancel(ctx: RouteContext) {
 
 async function rescheduleOptions(ctx: RouteContext) {
   const slug = slugOf(ctx)
-  await manageLimit(ctx, slug)
   const from = ctx.url.searchParams.get('from') ?? ''
   const days = Number(ctx.url.searchParams.get('days') ?? '7')
   if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !Number.isInteger(days) || days < 1 || days > 14) throw new HttpError('VALIDATION')
-  const data = await rpc('api_public_reschedule_availability', { p_slug: slug, ...(await clientAuth(ctx)), p_from_day: from, p_days: days })
+  const auth = await clientAuth(ctx)
+  const data = await limited(manageLimit(ctx, slug), () => rpc('api_public_reschedule_availability', { p_slug: slug, ...auth, p_from_day: from, p_days: days }))
   return json(ctx.req, data)
 }
 
 async function calendar(ctx: RouteContext) {
   const slug = slugOf(ctx)
-  await manageLimit(ctx, slug)
-  const data = await rpc<BookingResponse>('api_public_booking', { p_slug: slug, ...(await clientAuth(ctx)) })
+  const auth = await clientAuth(ctx)
+  const data = await limited(manageLimit(ctx, slug), () => rpc<BookingResponse>('api_public_booking', { p_slug: slug, ...auth }))
   const app = config().appUrl
   const ics = bookingToIcs(data.booking, data.studio, {
     host: new URL(app).host,
@@ -257,8 +265,8 @@ async function calendar(ctx: RouteContext) {
 
 async function profile(ctx: RouteContext) {
   const slug = slugOf(ctx)
-  await manageLimit(ctx, slug)
-  const data = await rpc<ProfileView>('api_public_profile', { p_slug: slug, p_profile_key_hash: await requireClientKey(ctx.req) })
+  const key = await requireClientKey(ctx.req)
+  const data = await limited(manageLimit(ctx, slug), () => rpc<ProfileView>('api_public_profile', { p_slug: slug, p_profile_key_hash: key }))
   const media: MediaView[] = [
     ...data.vehicles.flatMap((v) => (v.photo ? [v.photo] : [])),
     ...data.bookings.flatMap((b) => b.media),

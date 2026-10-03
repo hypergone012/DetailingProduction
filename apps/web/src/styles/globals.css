@@ -130,9 +130,18 @@
   .pressable:active:not(:disabled) {
     transform: scale(0.975);
   }
+  /* The shimmer is a moving layer (transform, on the GPU), not a repainted background. */
   .skeleton {
-    background: linear-gradient(90deg, var(--dp-sunken) 0%, var(--dp-surface-2) 50%, var(--dp-sunken) 100%);
-    background-size: 200% 100%;
+    position: relative;
+    overflow: hidden;
+    background: var(--dp-sunken);
+  }
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, var(--dp-surface-2), transparent);
+    transform: translateX(-100%);
     animation: dp-shimmer 1.4s ease-in-out infinite;
   }
   .safe-bottom {
@@ -164,8 +173,7 @@
 }
 
 @keyframes dp-shimmer {
-  from { background-position: 200% 0; }
-  to { background-position: -200% 0; }
+  to { transform: translateX(100%); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -177,8 +185,9 @@
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
-  .skeleton {
+  .skeleton::after {
     animation: none;
+    display: none;
   }
 }
 
@@ -203,12 +212,6 @@ html[data-motion='reduce'] *::after {
  * Client site: premium surface. Light type on photos in every theme, ambient glow, hover
  * depth, sheen on key buttons. Motion stops with the OS setting or Profile → «Анимации».
  * ------------------------------------------------------------------------------------- */
-
-@property --dp-angle {
-  syntax: '<angle>';
-  inherits: false;
-  initial-value: 0deg;
-}
 
 /* Text on a darkened photo: always light, tinted toward the theme accent, with depth. */
 @utility text-on-photo {
@@ -287,32 +290,42 @@ html[data-motion='reduce'] *::after {
   22%, 100% { transform: translateX(120%); }
 }
 
-/* A slowly travelling light on the border of the main booking card. */
+/*
+ * A slowly travelling light on the border of the main booking card. The conic light is
+ * painted once and turns behind the card (only a transform animates, on the GPU: no repaint
+ * per frame); the card's own fill (::after) covers all of it but the rim, over the border.
+ */
 @utility ring-glow {
   position: relative;
   isolation: isolate;
+  overflow: clip;
+  overflow-clip-margin: 1px;
   &::before {
     content: '';
     position: absolute;
-    inset: -1px;
+    z-index: -2;
+    left: 50%;
+    top: 50%;
+    width: 250%;
+    aspect-ratio: 1;
+    background: conic-gradient(transparent 0 58%, color-mix(in oklab, var(--dp-accent) 90%, white) 72%, transparent 86%);
+    transform: translate(-50%, -50%);
+    animation: dp-orbit 7s linear infinite;
+    will-change: transform;
+    pointer-events: none;
+  }
+  &::after {
+    content: '';
+    position: absolute;
     z-index: -1;
+    inset: 0.5px;
     border-radius: inherit;
-    padding: 1.5px;
-    background: conic-gradient(
-      from var(--dp-angle),
-      transparent 0 58%,
-      color-mix(in oklab, var(--dp-accent) 90%, white) 72%,
-      transparent 86%
-    );
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    animation: dp-spin 7s linear infinite;
+    background: inherit;
     pointer-events: none;
   }
 }
-@keyframes dp-spin {
-  to { --dp-angle: 360deg; }
+@keyframes dp-orbit {
+  to { transform: translate(-50%, -50%) rotate(1turn); }
 }
 
 @layer components {
@@ -400,13 +413,43 @@ html[data-motion='reduce'] *::after {
   100% { transform: translate3d(3vw, 4vh, 0) rotate(6deg); }
 }
 
+/* Cover parallax, driven by scrolling itself (no JavaScript). The header's own view timeline:
+   from its top at the top of the window to its bottom there ("exit"). Browsers without
+   scroll-driven animations keep the cover still. */
+@supports (animation-timeline: view()) {
+  .hero-timeline {
+    view-timeline-name: --dp-hero;
+  }
+  .hero-parallax-photo {
+    animation: dp-hero-photo linear both;
+    animation-timeline: --dp-hero;
+    animation-range: exit 0% exit 100%;
+  }
+  @media (min-width: 1024px) {
+    .hero-parallax-text {
+      animation: dp-hero-text linear both;
+      animation-timeline: --dp-hero;
+      animation-range: exit 0% exit 100%;
+    }
+  }
+}
+@keyframes dp-hero-photo {
+  to { transform: translateY(14%); }
+}
+@keyframes dp-hero-text {
+  90% { opacity: 0.15; }
+  to { transform: translateY(-70px); opacity: 0.15; }
+}
+
 /* Reduced motion: no continuous effects at all (the generic rule above only shortens them). */
 @media (prefers-reduced-motion: reduce) {
-  .sheen::after, .ring-glow::before, .pulse-dot::after, .dp-aurora, .text-on-photo { animation: none !important; }
+  .sheen::after, .ring-glow::before, .pulse-dot::after, .dp-aurora, .text-on-photo, .hero-parallax-photo, .hero-parallax-text { animation: none !important; }
   .sheen::after { display: none; }
 }
 html[data-motion='reduce'] .sheen::after,
 html[data-motion='reduce'] .pulse-dot::after { display: none; }
 html[data-motion='reduce'] .ring-glow::before,
 html[data-motion='reduce'] .dp-aurora,
-html[data-motion='reduce'] .text-on-photo { animation: none !important; }
+html[data-motion='reduce'] .text-on-photo,
+html[data-motion='reduce'] .hero-parallax-photo,
+html[data-motion='reduce'] .hero-parallax-text { animation: none !important; }

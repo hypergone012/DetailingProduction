@@ -1,19 +1,18 @@
 import { AnimatePresence, m, type Variants } from 'motion/react'
 import { useLayoutEffect, useState, type ReactNode } from 'react'
 import { useLocation, useNavigationType } from 'react-router'
-import { dur, ease } from '@/motion/tokens'
+import { dur, ease, move, settled } from '@/motion/tokens'
 import { useTenant } from '@/tenant/TenantProvider'
 import { tabIndexOf } from './tabs'
 
 type Move = { kind: 'tab'; dir: number } | { kind: 'push' } | { kind: 'pop' } | { kind: 'none' }
 
 const variants: Variants = {
-  enter: (mv: Move) =>
-    mv.kind === 'tab' ? { opacity: 0, x: mv.dir * 28 } : mv.kind === 'push' ? { opacity: 0, x: 40 } : mv.kind === 'pop' ? { opacity: 0, x: -28 } : { opacity: 0 },
-  center: { opacity: 1, x: 0, transition: { duration: dur.base, ease: ease.out } },
+  enter: (mv: Move) => ({ opacity: 0, transform: move(mv.kind === 'tab' ? mv.dir * 28 : mv.kind === 'push' ? 40 : mv.kind === 'pop' ? -28 : 0) }),
+  center: { opacity: 1, ...settled, transition: { duration: dur.base, ease: ease.out } },
   exit: (mv: Move) => ({
     opacity: 0,
-    x: mv.kind === 'tab' ? mv.dir * -18 : mv.kind === 'push' ? -18 : mv.kind === 'pop' ? 28 : 0,
+    transform: move(mv.kind === 'tab' ? mv.dir * -18 : mv.kind === 'push' ? -18 : mv.kind === 'pop' ? 28 : 0),
     transition: { duration: dur.fast, ease: ease.inOut },
   }),
 }

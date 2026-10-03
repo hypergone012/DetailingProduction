@@ -25,7 +25,8 @@ export function corsHeaders(req: Request): Record<string, string> {
     headers['access-control-allow-origin'] = origin
     headers['access-control-allow-headers'] = ALLOW_HEADERS
     headers['access-control-allow-methods'] = 'GET, POST, PATCH, DELETE, OPTIONS'
-    headers['access-control-max-age'] = '600'
+    // Browsers cap this (Chromium 2 h, Safari 10 min); the cap is the goal: fewer preflight round trips.
+    headers['access-control-max-age'] = '7200'
   }
   return headers
 }

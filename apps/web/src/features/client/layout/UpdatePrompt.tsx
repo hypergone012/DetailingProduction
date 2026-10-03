@@ -3,7 +3,10 @@ import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { applyUpdate } from '@/pwa/register'
 
-/** A new build is waiting in the service worker: offer to reload (never forced mid-booking). */
+/**
+ * A new build is waiting in the service worker: offer to reload (never forced mid-booking).
+ * Mounted by ClientApp once `dp:update-ready` fired; shows at once and on later updates.
+ */
 export function UpdatePrompt() {
   const showToast = useToast()
   useEffect(() => {
@@ -18,6 +21,7 @@ export function UpdatePrompt() {
           </Button>
         ),
       })
+    on()
     window.addEventListener('dp:update-ready', on)
     return () => window.removeEventListener('dp:update-ready', on)
   }, [showToast])

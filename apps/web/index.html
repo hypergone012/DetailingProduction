@@ -3,6 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <link rel="preconnect" href="%VITE_SUPABASE_URL%" crossorigin />
+    <link rel="preconnect" href="%VITE_SUPABASE_URL%" />
+    <script>
+      // The studio's data starts loading with the page, in parallel with the app code instead of
+      // after it (a second or more on a phone). The app picks the response up: lib/api/public.ts.
+      ;(function () {
+        var m = /^\/s\/([a-z0-9-]+)(\/owner(?:\/|$))?/.exec(location.pathname)
+        if (!m || !window.fetch) return
+        var fresh = Boolean(m[2])
+        var url = '%VITE_SUPABASE_URL%'.replace(/\/$/, '') + '/functions/v1/public-api/t/' + m[1]
+        window.__dpBoot = { slug: m[1], fresh: fresh, res: fetch(url, fresh ? { cache: 'no-cache' } : {}).catch(function () { return null }) }
+      })()
+    </script>
     <!--dp:head-->
     <title>Запись в студию</title>
     <meta name="theme-color" content="#0E0F11" />

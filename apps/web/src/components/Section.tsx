@@ -1,15 +1,15 @@
 import { m } from 'motion/react'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
-import { ease } from '@/motion/tokens'
+import { ease, move, settled } from '@/motion/tokens'
 
 /** The section rises into place the first time it scrolls into view (same box, no layout change). */
 export function Section({ title, action, children, className }: { title?: string; action?: ReactNode; children: ReactNode; className?: string }) {
   return (
     <m.section
       className={cn('grid gap-3', className)}
-      initial={{ opacity: 0, y: 14 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, transform: move(0, 14) }}
+      whileInView={{ opacity: 1, ...settled }}
       viewport={{ once: true, amount: 0.1 }}
       transition={{ duration: 0.5, ease: ease.out }}
     >

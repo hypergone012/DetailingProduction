@@ -8,12 +8,13 @@ export function Img({ media, sizes = '100vw', alt, className, priority = false }
   return (
     <img
       // Fades in once decoded (see img[data-fade] in globals.css); cached images are marked at once.
+      // Not the priority image (the cover): it is the page's largest paint and shows as soon as it arrives.
       ref={(el) => {
         if (el?.complete) el.dataset.loaded = ''
       }}
       onLoad={(e) => (e.currentTarget.dataset.loaded = '')}
       onError={(e) => (e.currentTarget.dataset.loaded = '')}
-      data-fade=""
+      data-fade={priority ? undefined : ''}
       src={media.url}
       srcSet={srcSet || undefined}
       sizes={srcSet ? sizes : undefined}

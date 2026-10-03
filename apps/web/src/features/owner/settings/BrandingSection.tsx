@@ -7,7 +7,7 @@ import { Card, Section } from '@/components/Section'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
+import { SavingSwitch } from '@/components/ui/switch'
 import { errorMessage } from '@/lib/api/http'
 import { cn } from '@/lib/utils'
 import { tenantQueryKey, useTenant } from '@/tenant/TenantProvider'
@@ -105,7 +105,7 @@ export function BrandingSection({ settings }: { settings: SettingsRow }) {
             <span className="text-[15px]">Демонстрационные иллюстрации</span>
             <span className="text-xs text-fg-subtle">Выключите, когда замените обложку, фото услуг и работ реальными снимками студии — это условие рабочего режима.</span>
           </span>
-          <Switch checked={Boolean(settings.branding.demoArtwork)} onCheckedChange={(on) => save.mutate({ demoArtwork: on })} />
+          <SavingSwitch checked={Boolean(settings.branding.demoArtwork)} onSave={(on) => save.mutateAsync({ demoArtwork: on })} />
         </label>
       </Card>
     </Section>

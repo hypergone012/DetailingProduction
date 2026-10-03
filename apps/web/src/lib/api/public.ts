@@ -3,6 +3,13 @@ import type { ChatResponse } from '@dp/core/ai/tools'
 import { device } from '@/lib/device'
 import { callFunction } from './http'
 
+declare global {
+  interface Window {
+    /** The studio data request index.html starts before the app code loads. */
+    __dpBoot?: { slug: string; fresh: boolean; res: Promise<Response | null> }
+  }
+}
+
 /** Typed client for the public-api Edge Function. Auth headers come from this device. */
 export function publicApi(slug: string) {
   const base = `/public-api/t/${encodeURIComponent(slug)}`
@@ -16,13 +23,22 @@ export function publicApi(slug: string) {
   }
   return {
     /** `fresh`: skip cached copies (the owner cabinet, right after its own edits). */
-    bootstrap: (o: { fresh?: boolean } = {}) => callFunction<Bootstrap>(base, o.fresh ? { cache: 'no-cache' } : {}),
+    bootstrap: async (o: { fresh?: boolean } = {}) => {
+      // The first load takes over the request index.html already started (once).
+      const early = window.__dpBoot
+      if (early && early.slug === slug && early.fresh === Boolean(o.fresh)) {
+        window.__dpBoot = undefined
+        const res = await early.res
+        if (res?.ok) return (await res.json()) as Bootstrap
+      }
+      return callFunction<Bootstrap>(base, { bare: true, ...(o.fresh ? { cache: 'no-cache' as const } : {}) })
+    },
     availability: (q: { serviceId: string; bodyType?: string | null; addonIds?: string[]; from: string; days: number; ignoreBooking?: string }) => {
       const p = new URLSearchParams({ service_id: q.serviceId, from: q.from, days: String(q.days) })
       if (q.bodyType) p.set('body_type', q.bodyType)
       if (q.addonIds?.length) p.set('addon_ids', q.addonIds.join(','))
       if (q.ignoreBooking) p.set('ignore_booking', q.ignoreBooking)
-      return callFunction<AvailabilityResponse>(`${base}/availability?${p}`)
+      return callFunction<AvailabilityResponse>(`${base}/availability?${p}`, { bare: true })
     },
     createBooking: async (body: CreateBookingRequest, idempotencyKey: string) => {
       const r = await callFunction<CreateBookingResponse>(`${base}/bookings`, {

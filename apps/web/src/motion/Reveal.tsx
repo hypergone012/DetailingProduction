@@ -1,20 +1,21 @@
 import { animate, m, useInView, type Variants } from 'motion/react'
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
 import { useAppTheme } from '@/theme/ThemeProvider'
-import { ease } from './tokens'
+import { ease, move, settled } from './tokens'
 
-// Blur on large screens only: animating a filter on big blocks is costly on phones.
-const BLUR = typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
+// Blur on large screens only: a filter animation repaints on the CPU every frame, which phones
+// pay for exactly while the page is loading. Phones get the same rise without the blur.
+export const BLUR = typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
 
 /** Content rises into place (un-blurring on desktop) the first time it scrolls into view. */
 const rise: Variants = BLUR
   ? {
-      hidden: { opacity: 0, y: 26, filter: 'blur(6px)' },
-      show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.7, ease: ease.out } },
+      hidden: { opacity: 0, transform: move(0, 26), filter: 'blur(6px)' },
+      show: { opacity: 1, ...settled, filter: 'blur(0px)', transition: { duration: 0.7, ease: ease.out } },
     }
   : {
-      hidden: { opacity: 0, y: 18 },
-      show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: ease.out } },
+      hidden: { opacity: 0, transform: move(0, 18) },
+      show: { opacity: 1, ...settled, transition: { duration: 0.55, ease: ease.out } },
     }
 
 const VIEWPORT = { once: true, amount: 0.12, margin: '0px 0px -6% 0px' } as const

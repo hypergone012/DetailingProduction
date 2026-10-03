@@ -26,8 +26,8 @@ const load = {
   profile: () => import('./profile/ProfileScreen'),
   sheets: () => import('./booking/BookingSheets'),
   assistant: () => import('./assistant/AssistantSheet'),
-  update: () => import('./layout/UpdatePrompt'),
 }
+const loadUpdate = () => import('./layout/UpdatePrompt')
 const ServicesScreen = lazy(() => load.services().then((m) => ({ default: m.ServicesScreen })))
 const ServiceDetailScreen = lazy(() => load.serviceDetail().then((m) => ({ default: m.ServiceDetailScreen })))
 const GarageScreen = lazy(() => load.garage().then((m) => ({ default: m.GarageScreen })))
@@ -37,7 +37,7 @@ const BookingDetailScreen = lazy(() => load.booking().then((m) => ({ default: m.
 const TokenLanding = lazy(() => load.token().then((m) => ({ default: m.TokenLanding })))
 const ProfileScreen = lazy(() => load.profile().then((m) => ({ default: m.ProfileScreen })))
 const BookingSheets = lazy(() => load.sheets().then((m) => ({ default: m.BookingSheets })))
-const UpdatePrompt = lazy(() => load.update().then((m) => ({ default: m.UpdatePrompt })))
+const UpdatePrompt = lazy(() => loadUpdate().then((m) => ({ default: m.UpdatePrompt })))
 const AssistantSheet = lazy(() => load.assistant().then((m) => ({ default: m.AssistantSheet })))
 
 /** Cursor position inside `.spotlight` cards, for their hover light (mouse devices only). */
@@ -56,12 +56,42 @@ function useSpotlight() {
   }, [])
 }
 
+/**
+ * Prefetches the other screens once the page has fully loaded (cover photo included) and the
+ * browser is idle, so it never competes with the first screen. Skipped with Data Saver.
+ */
 function usePrefetch() {
   useEffect(() => {
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
+    if (connection?.saveData) return
+    let handle = 0
     const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1200))
-    const handle = idle(() => Object.values(load).forEach((l) => void l().catch(() => undefined)))
-    return () => (window.cancelIdleCallback ?? window.clearTimeout)(handle as number)
+    const start = () => {
+      handle = idle(() => Object.values(load).forEach((l) => void l().catch(() => undefined)), { timeout: 4000 }) as number
+    }
+    if (document.readyState === 'complete') start()
+    else window.addEventListener('load', start, { once: true })
+    return () => {
+      window.removeEventListener('load', start)
+      ;(window.cancelIdleCallback ?? window.clearTimeout)(handle)
+    }
   }, [])
+}
+
+/** The update toast's code loads only when a new version is actually waiting. */
+function Update() {
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    const on = () => setReady(true)
+    window.addEventListener('dp:update-ready', on)
+    return () => window.removeEventListener('dp:update-ready', on)
+  }, [])
+  if (!ready) return null
+  return (
+    <Suspense fallback={null}>
+      <UpdatePrompt />
+    </Suspense>
+  )
 }
 
 function ScreenFallback() {
@@ -133,9 +163,7 @@ export function ClientApp() {
           <BottomNav />
           <Sheets />
           <Assistant />
-          <Suspense fallback={null}>
-            <UpdatePrompt />
-          </Suspense>
+          <Update />
         </BookingFlowProvider>
       </MotionProvider>
     </ThemeProvider>

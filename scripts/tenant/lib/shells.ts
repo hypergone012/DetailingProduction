@@ -10,6 +10,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Bootstrap } from '@dp/core/api/contracts'
+import { HERO_IMAGE_SIZES } from '@dp/core/tenant/constants'
 import { buildManifest, tenantThemeColors, type ManifestInput } from '@dp/core/tenant/manifest'
 import { get, type Env } from './supabase.ts'
 
@@ -50,7 +51,8 @@ export function shellHead(data: Bootstrap, app: 'client' | 'owner', appUrl: stri
   const icon = data.media.find((m) => m.kind === 'icon')
   const apple = icon?.variants.find((v) => v.purpose === 'apple')?.url
   const favicon = icon?.variants.find((v) => v.purpose === 'favicon')?.url
-  const hero = data.media.find((m) => m.key === data.branding.heroKey) ?? data.media.find((m) => m.kind === 'hero')
+  // As in the app (mediaByKey): an owner's upload has no key, so a null heroKey must not match it.
+  const hero = (data.branding.heroKey ? data.media.find((m) => m.key === data.branding.heroKey) : undefined) ?? data.media.find((m) => m.kind === 'hero')
   const heroUrl = hero?.variants.slice().sort((a, b) => b.w - a.w).find((v) => v.w <= 1280)?.url ?? hero?.url
   const base = app === 'client' ? `/s/${data.tenant.slug}/` : `/s/${data.tenant.slug}/owner/`
   const title = app === 'client' ? data.seo.title || name : `Кабинет · ${name}`
@@ -67,6 +69,16 @@ export function shellHead(data: Bootstrap, app: 'client' | 'owner', appUrl: stri
     favicon && `<link rel="icon" href="${esc(favicon)}" />`,
   ]
   if (app === 'client') {
+    // The cover is the largest element of the studio home: start it with the page, not after
+    // the app code and data. Only on the home (every client path serves this shell). Default
+    // (low) priority: it uses spare bandwidth and never delays the app code it needs to show.
+    const srcset = hero?.variants.filter((v) => v.url && !v.purpose).map((v) => `${v.url} ${v.w}w`).join(', ')
+    if (hero?.url) {
+      const preload = { href: hero.url, srcset: srcset ?? '', sizes: HERO_IMAGE_SIZES }
+      lines.push(
+        `<script>if(/^\\/s\\/${data.tenant.slug}\\/?$/.test(location.pathname)){var l=document.createElement('link');l.rel='preload';l.as='image';var p=${JSON.stringify(preload).replace(/</g, '\\u003c')};l.href=p.href;if(p.srcset){l.imageSrcset=p.srcset;l.imageSizes=p.sizes}document.head.appendChild(l)}</script>`,
+      )
+    }
     lines.push(
       `<link rel="canonical" href="${esc(appUrl + base)}" />`,
       `<meta property="og:type" content="website" />`,

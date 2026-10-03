@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Field } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Switch } from '@/components/ui/switch'
+import { SavingSwitch, Switch } from '@/components/ui/switch'
 import { errorMessage } from '@/lib/api/http'
 import { dateWithYear, today } from '@/lib/format'
 import { tenantQueryKey } from '@/tenant/TenantProvider'
@@ -195,7 +195,7 @@ function Resources() {
               <span className="font-medium">{r.name}</span>
               <span className="text-xs text-fg-subtle">тип: {r.type}</span>
             </div>
-            <Switch disabled={!isOwner || save.isPending} checked={r.active} onCheckedChange={(active) => save.mutate({ id: r.id, active })} aria-label={`${r.name} — активен`} />
+            <SavingSwitch disabled={!isOwner} checked={r.active} onSave={(active) => save.mutateAsync({ id: r.id, active })} aria-label={`${r.name} — активен`} />
           </div>
         ))}
       </Card>

@@ -20,11 +20,20 @@ export interface RequestOptions {
   timeoutMs?: number
   /** `no-cache`: revalidate with the server instead of reusing a cached response. */
   cache?: RequestCache
+  /**
+   * Public GET without the project key header: a "simple" cross-origin request, so the
+   * browser skips the CORS preflight round trip. Retried once with the key if refused.
+   */
+  bare?: boolean
 }
+
+/** Set once the platform refused a call without the key: then every call carries it. */
+let keyRequired = false
 
 /** Calls an Edge Function. Errors always surface as ApiError with a stable code and a human message. */
 export async function callFunction<T>(path: string, o: RequestOptions = {}): Promise<T> {
-  const headers: Record<string, string> = { apikey: env.anonKey, ...o.headers }
+  const bare = o.bare && !keyRequired
+  const headers: Record<string, string> = { ...(bare ? {} : { apikey: env.anonKey }), ...o.headers }
   let body = o.body
   if (o.json !== undefined) {
     headers['content-type'] = 'application/json'
@@ -40,6 +49,10 @@ export async function callFunction<T>(path: string, o: RequestOptions = {}): Pro
     throw new ApiError('NETWORK', navigator.onLine ? ERROR_MESSAGES.INTERNAL! : ERROR_MESSAGES.NETWORK!, 0)
   } finally {
     window.clearTimeout(timer)
+  }
+  if (res.status === 401 && bare) {
+    keyRequired = true
+    return callFunction<T>(path, { ...o, bare: false })
   }
   if (res.ok) {
     const type = res.headers.get('content-type') ?? ''

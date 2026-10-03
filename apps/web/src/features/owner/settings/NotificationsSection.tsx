@@ -3,7 +3,7 @@ import { Bell, BellOff, BellRing, Smartphone } from 'lucide-react'
 import { useState } from 'react'
 import { Card, Section } from '@/components/Section'
 import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
+import { SavingSwitch } from '@/components/ui/switch'
 import { errorMessage } from '@/lib/api/http'
 import { pushState, subscribePush, unsubscribePush } from '@/lib/push'
 import { useTenant } from '@/tenant/TenantProvider'
@@ -22,11 +22,11 @@ export function NotificationsSection({ settings }: { settings: SettingsRow }) {
         <Card className="grid gap-3 p-4">
           <label className="flex items-center justify-between gap-3">
             <span className="text-[15px]">Клиентам: подтверждения, переносы, напоминания</span>
-            <Switch checked={settings.notify_client_push} disabled={save.isPending} onCheckedChange={(v) => save.mutate({ notify_client_push: v })} />
+            <SavingSwitch checked={settings.notify_client_push} onSave={(v) => save.mutateAsync({ notify_client_push: v })} />
           </label>
           <label className="flex items-center justify-between gap-3">
             <span className="text-[15px]">Студии: новые записи, переносы, отмены</span>
-            <Switch checked={settings.notify_owner_push} disabled={save.isPending} onCheckedChange={(v) => save.mutate({ notify_owner_push: v })} />
+            <SavingSwitch checked={settings.notify_owner_push} onSave={(v) => save.mutateAsync({ notify_owner_push: v })} />
           </label>
           {save.error && <p role="alert" className="text-sm text-danger">{errorMessage(save.error)}</p>}
         </Card>

@@ -68,6 +68,13 @@ function OwnerGate() {
   const { session, ready, recovery } = useSession()
   const { slug, data } = useTenant()
   const membership = useMembership(data.tenant.id, session?.user.id)
+  // The first screen's code loads while the owner types the password (or while access is
+  // checked), not after: one round trip less between «Войти» and «Сегодня».
+  useEffect(() => {
+    const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 600))
+    const handle = idle(() => void load.today().catch(() => undefined))
+    return () => (window.cancelIdleCallback ?? window.clearTimeout)(handle as number)
+  }, [])
   const value = useMemo<OwnerContextValue | null>(() => {
     if (!session || !membership.data) return null
     const role = membership.data
