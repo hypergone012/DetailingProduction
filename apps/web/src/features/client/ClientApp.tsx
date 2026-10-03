@@ -40,6 +40,22 @@ const BookingSheets = lazy(() => load.sheets().then((m) => ({ default: m.Booking
 const UpdatePrompt = lazy(() => load.update().then((m) => ({ default: m.UpdatePrompt })))
 const AssistantSheet = lazy(() => load.assistant().then((m) => ({ default: m.AssistantSheet })))
 
+/** Cursor position inside `.spotlight` cards, for their hover light (mouse devices only). */
+function useSpotlight() {
+  useEffect(() => {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return
+    const move = (e: PointerEvent) => {
+      const el = (e.target as Element | null)?.closest?.('.spotlight') as HTMLElement | null
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      el.style.setProperty('--mx', `${e.clientX - r.left}px`)
+      el.style.setProperty('--my', `${e.clientY - r.top}px`)
+    }
+    document.addEventListener('pointermove', move, { passive: true })
+    return () => document.removeEventListener('pointermove', move)
+  }, [])
+}
+
 function usePrefetch() {
   useEffect(() => {
     const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1200))
@@ -87,13 +103,15 @@ function Assistant() {
 export function ClientApp() {
   const { slug, data } = useTenant()
   usePrefetch()
+  useSpotlight()
   return (
     <ThemeProvider storageKey={`${slug}:client`} branding={data.branding}>
       <MotionProvider>
         <TenantHead data={data} app="client" />
         <BookingFlowProvider>
+          <div className="dp-aurora" aria-hidden />
           <TopNav />
-          <main className="min-h-dvh pb-[calc(var(--dp-nav-height)+var(--dp-safe-bottom)+8px)] md:pt-16 md:pb-12 md:[--dp-header-offset:4rem] lg:min-h-[calc(100dvh-200px)] lg:pt-[72px] lg:pb-0 lg:[--dp-header-offset:72px]">
+          <main className="relative z-[1] min-h-dvh pb-[calc(var(--dp-nav-height)+var(--dp-safe-bottom)+8px)] md:pt-16 md:pb-12 md:[--dp-header-offset:4rem] lg:min-h-[calc(100dvh-200px)] lg:pt-[72px] lg:pb-0 lg:[--dp-header-offset:72px]">
             <ScreenTransition>
               <Suspense fallback={<ScreenFallback />}>
                 <Routes>

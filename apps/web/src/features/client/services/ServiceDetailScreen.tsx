@@ -49,7 +49,7 @@ export function ServiceDetailScreen() {
                   media={m}
                   priority={i === 0}
                   sizes={i === 0 ? '(min-width: 1024px) 820px, 92vw' : '(min-width: 1024px) 270px, 92vw'}
-                  className="aspect-[16/10] w-[92%] shrink-0 snap-center rounded-2xl lg:w-full lg:rounded-3xl lg:first:col-span-3"
+                  className="aspect-[16/10] w-[92%] shrink-0 snap-center rounded-2xl lg:w-full lg:rounded-3xl lg:shadow-card lg:first:col-span-3"
                 />
               ))}
             </div>
@@ -94,16 +94,16 @@ export function ServiceDetailScreen() {
         </div>
 
         <aside className="contents lg:sticky lg:top-[calc(var(--dp-header-offset,0px)+24px)] lg:col-span-5 lg:grid lg:gap-8">
-          <Card className="hidden gap-5 rounded-3xl p-8 lg:grid">
+          <Card className="ring-glow hidden gap-5 rounded-3xl p-8 lg:grid">
             <div className="grid gap-1">
               <span className="text-sm text-fg-subtle">{mine && myVehicle ? `Для ${myVehicle.nickname || `${myVehicle.make} ${myVehicle.model}`}` : 'Стоимость'}</span>
-              <span className="text-[40px] leading-none font-bold tracking-tight tabular">{price}</span>
+              <span className="text-gradient text-[44px] leading-none font-bold tracking-tight tabular">{price}</span>
             </div>
             <p className="flex items-center gap-2 text-[15px] text-fg-muted">
               <Clock className="size-5" aria-hidden />
               {s.multi_day ? 'Несколько дней, автомобиль остаётся в студии' : duration(s.duration_min)}
             </p>
-            <Button size="lg" block className="h-14 text-[17px]" onClick={start}>
+            <Button size="lg" block className="sheen h-14 text-[17px]" onClick={start}>
               <CalendarPlus /> Записаться
             </Button>
             <p className="text-sm text-fg-subtle">Свободное время и итоговая цена для вашего кузова — на следующем шаге.</p>

@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, Bot, CalendarClock, CalendarPlus, ChevronRight, Clock, MapPin, Navigation, Phone, Sparkles } from 'lucide-react'
+import { m, useScroll, useTransform, type Variants } from 'motion/react'
+import { useRef, type ReactNode } from 'react'
+import { ArrowRight, Bot, CalendarClock, CalendarPlus, CarFront, ChevronRight, Clock, ListChecks, MapPin, Navigation, Phone, Sparkles } from 'lucide-react'
 import { Link } from 'react-router'
 import { Img } from '@/components/Img'
 import { Badge } from '@/components/ui/badge'
@@ -7,7 +9,9 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { dayParts, duration, money, phonePretty, today, when } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { CountUp, RevealGroup, RevealItem } from '@/motion/Reveal'
 import { Stagger, StaggerItem } from '@/motion/Stagger'
+import { ease } from '@/motion/tokens'
 import { useTenant } from '@/tenant/TenantProvider'
 import { useChatParam } from '@/components/assistant/chatParam'
 import { useBookingFlow } from '../booking/flow'
@@ -16,12 +20,12 @@ import { suggestionText } from '../garage/suggestions'
 import { Card, Section } from '@/components/Section'
 import { StatusBadge } from '@/components/StatusBadge'
 import { VehicleGlyph } from '@/components/VehicleGlyph'
-import { SiteSection } from '../layout/site'
+import { SiteSection, useIsDesktop, useStillMotion } from '../layout/site'
 import { WEEKDAY_NAMES, openStatus } from '../shared/hours'
 
 /** Buttons over the cover photo (desktop): light on any theme, the photo is darkened under them. */
 const ON_PHOTO =
-  'pressable inline-flex h-14 items-center gap-2.5 rounded-xl border border-white/25 bg-white/10 px-6 text-[17px] font-medium text-white backdrop-blur-md outline-none transition-colors hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-focus [&_svg]:size-5'
+  'pressable inline-flex h-14 items-center gap-2.5 rounded-xl border border-white/25 bg-white/10 px-6 text-[17px] font-medium text-white backdrop-blur-md outline-none transition-[background-color,border-color,transform] duration-300 hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-focus [&_svg]:size-5'
 
 /** Services shown on the desktop home page (the rest are one click away). */
 const HOME_SERVICES = 8
@@ -51,6 +55,16 @@ export function HomeScreen() {
   )
 }
 
+const heroGroup: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.12, delayChildren: 0.2 } } }
+const heroItem: Variants = {
+  hidden: { opacity: 0, y: 24, filter: 'blur(10px)' },
+  show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.9, ease: ease.out } },
+}
+const factItem: Variants = {
+  hidden: { opacity: 0, x: 36 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.9, ease: ease.out } },
+}
+
 function StudioHero() {
   const { slug, data, currency, locale, mediaByKey, mediaFor } = useTenant()
   const flow = useBookingFlow()
@@ -58,75 +72,109 @@ function StudioHero() {
   const logo = mediaByKey(data.branding.logoKey) ?? mediaFor('logo')[0]
   const status = openStatus(data)
   const cheapest = data.services.length ? Math.min(...data.services.map(minPrice)) : null
-  const facts = [
-    { value: String(data.services.length), label: servicesWord(data.services.length) },
-    ...(cheapest !== null ? [{ value: `от ${money(cheapest, currency, locale)}`, label: 'стоимость' }] : []),
-    { value: `${data.policy.horizon_days} дн.`, label: 'запись вперёд' },
-  ]
+  const still = useStillMotion()
+  const desktop = useIsDesktop()
+  // Depth on scroll: the photo drifts slower than the page, the text lifts and fades (desktop).
+  const ref = useRef<HTMLElement>(null)
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
+  const photoY = useTransform(scrollYProgress, [0, 1], ['0%', '14%'])
+  const textY = useTransform(scrollYProgress, [0, 1], [0, -70])
+  const textFade = useTransform(scrollYProgress, [0, 0.9], [1, 0.15])
   return (
-    <header className="relative lg:overflow-hidden lg:rounded-[28px] lg:border lg:border-line">
+    <header ref={ref} className="relative lg:overflow-hidden lg:rounded-[28px] lg:border lg:border-line lg:shadow-[0_40px_80px_-40px_rgb(0_0_0/0.6)]">
       <div className="relative aspect-[16/9] max-h-[320px] w-full overflow-hidden bg-sunken lg:aspect-auto lg:h-[clamp(480px,68vh,680px)] lg:max-h-none">
-        <Img media={hero} priority sizes="(min-width: 1024px) min(1376px, 100vw), 100vw" className="size-full" alt={data.branding.heroAlt ?? ''} />
-        <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-bg to-transparent lg:hidden" aria-hidden />
+        <m.div className="absolute inset-0" style={still ? undefined : { y: photoY }}>
+          <m.div className="size-full" initial={{ scale: 1.2 }} animate={{ scale: 1.1 }} transition={{ duration: 2.6, ease: ease.out }}>
+            <Img media={hero} priority sizes="(min-width: 1024px) min(1376px, 100vw), 100vw" className="size-full" alt={data.branding.heroAlt ?? ''} />
+          </m.div>
+        </m.div>
+        <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-bg via-bg/75 to-transparent lg:hidden" aria-hidden />
         <div
-          className="absolute inset-0 hidden bg-[linear-gradient(to_top,rgb(0_0_0/0.88),rgb(0_0_0/0.35)_48%,rgb(0_0_0/0.08)),linear-gradient(to_right,rgb(0_0_0/0.55),transparent_62%)] lg:block"
+          className="absolute inset-0 hidden bg-[linear-gradient(to_top,rgb(0_0_0/0.9),rgb(0_0_0/0.38)_48%,rgb(0_0_0/0.1)),linear-gradient(to_right,rgb(0_0_0/0.6),transparent_62%)] lg:block"
           aria-hidden
         />
       </div>
-      <div className="relative -mt-8 grid gap-2 px-4 lg:absolute lg:inset-x-0 lg:bottom-0 lg:mt-0 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10 lg:p-12 lg:text-white">
-        <div className="grid gap-2 lg:gap-5">
-          <div className="flex items-center gap-3 lg:gap-5">
-            {logo?.url && (
-              <img
-                src={logo.url}
-                alt=""
-                className="size-14 shrink-0 rounded-2xl border border-line bg-surface object-contain p-2 shadow-sm lg:size-20 lg:rounded-3xl lg:border-white/20 lg:bg-black/45 lg:p-3 lg:backdrop-blur-md"
-              />
-            )}
-            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 lg:gap-x-4">
-              <h1 className="text-[26px] leading-tight font-semibold text-balance lg:text-[64px] lg:leading-[1.02] lg:font-bold lg:tracking-tight">{data.tenant.name}</h1>
-              {data.tenant.status === 'demo' && (
-                <Badge tone="warning" className="lg:px-3 lg:py-1 lg:text-sm">
-                  Демо
-                </Badge>
+      <m.div
+        className="relative -mt-8 px-4 lg:absolute lg:inset-x-0 lg:bottom-0 lg:mt-0 lg:p-12"
+        style={still || !desktop ? undefined : { y: textY, opacity: textFade }}
+      >
+        <m.div variants={heroGroup} initial="hidden" animate="show" className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-10">
+          <div className="grid gap-2 lg:gap-5">
+            <m.div variants={heroItem} className="flex items-center gap-3 lg:gap-5">
+              {logo?.url && (
+                <img
+                  src={logo.url}
+                  alt=""
+                  className="size-14 shrink-0 rounded-2xl border border-line bg-surface object-contain p-2 shadow-sm lg:size-20 lg:rounded-3xl lg:border-white/20 lg:bg-black/45 lg:p-3 lg:shadow-[0_12px_32px_-12px_rgb(0_0_0/0.8)] lg:backdrop-blur-md"
+                />
               )}
-            </div>
-          </div>
-          {data.profile.tagline && <p className="text-[15px] text-fg-muted lg:max-w-3xl lg:text-[22px] lg:leading-snug lg:text-white/85">{data.profile.tagline}</p>}
-          <p className="flex min-w-0 items-center gap-1.5 text-sm lg:gap-2.5 lg:text-[17px]">
-            <span className={cn('size-2 shrink-0 rounded-full lg:size-2.5', status.open ? 'bg-success' : 'bg-fg-subtle lg:bg-white/60')} aria-hidden />
-            <span className={cn('shrink-0 lg:text-white', status.open ? 'text-fg' : 'text-fg-muted')}>{status.text}</span>
-            {data.profile.address && (
-              <>
-                <span className="truncate text-fg-subtle lg:hidden">· {data.profile.address.split(',')[0]}</span>
-                <span className="hidden truncate text-white/70 lg:inline">· {data.profile.address}</span>
-              </>
+              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 lg:gap-x-4">
+                <h1 className="text-gradient text-[28px] leading-tight font-bold tracking-tight text-balance lg:text-on-photo lg:text-[68px] lg:leading-[1.02]">{data.tenant.name}</h1>
+                {data.tenant.status === 'demo' && (
+                  <Badge tone="warning" className="lg:border lg:border-white/25 lg:bg-white/15 lg:px-3 lg:py-1 lg:text-sm lg:text-white lg:backdrop-blur-md">
+                    Демо
+                  </Badge>
+                )}
+              </div>
+            </m.div>
+            {data.profile.tagline && (
+              <m.p variants={heroItem} className="text-[15px] text-fg-muted lg:max-w-3xl lg:text-[22px] lg:leading-snug lg:text-white/90 lg:[text-shadow:0_2px_12px_rgb(0_0_0/0.6)]">
+                {data.profile.tagline}
+              </m.p>
             )}
-          </p>
-          <div className="hidden flex-wrap items-center gap-3 pt-2 lg:flex">
-            <Button size="lg" className="h-14 px-7 text-[17px]" onClick={() => flow.start()}>
-              <CalendarPlus /> Записаться онлайн
-            </Button>
-            {data.profile.phone && (
-              <a href={`tel:${data.profile.phone}`} className={ON_PHOTO}>
-                <Phone /> {phonePretty(data.profile.phone)}
-              </a>
-            )}
-            <Link to={`/s/${slug}/services`} className={ON_PHOTO}>
-              Услуги и цены <ArrowRight />
-            </Link>
+            <m.p variants={heroItem} className="flex min-w-0 items-center gap-1.5 text-sm lg:gap-2.5 lg:text-[17px] lg:[text-shadow:0_2px_10px_rgb(0_0_0/0.6)]">
+              <span className={cn('size-2 shrink-0 rounded-full lg:size-2.5', status.open ? 'pulse-dot bg-success' : 'bg-fg-subtle lg:bg-white/60')} aria-hidden />
+              <span className={cn('shrink-0 lg:text-white', status.open ? 'text-fg' : 'text-fg-muted')}>{status.text}</span>
+              {data.profile.address && (
+                <>
+                  <span className="truncate text-fg-subtle lg:hidden">· {data.profile.address.split(',')[0]}</span>
+                  <span className="hidden truncate text-white/75 lg:inline">· {data.profile.address}</span>
+                </>
+              )}
+            </m.p>
+            <m.div variants={heroItem} className="hidden flex-wrap items-center gap-3 pt-2 lg:flex">
+              <button
+                type="button"
+                onClick={() => flow.start()}
+                className="btn-on-photo sheen pressable inline-flex h-14 items-center gap-2.5 rounded-xl px-7 text-[17px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus [&_svg]:size-5"
+              >
+                <CalendarPlus aria-hidden /> Записаться онлайн
+              </button>
+              {data.profile.phone && (
+                <a href={`tel:${data.profile.phone}`} className={ON_PHOTO}>
+                  <Phone /> {phonePretty(data.profile.phone)}
+                </a>
+              )}
+              <Link to={`/s/${slug}/services`} className={ON_PHOTO}>
+                Услуги и цены <ArrowRight />
+              </Link>
+            </m.div>
           </div>
-        </div>
-        <dl className="hidden gap-3 lg:grid">
-          {facts.map((f) => (
-            <div key={f.label} className="grid min-w-44 gap-0.5 rounded-2xl border border-white/15 bg-black/40 px-5 py-4 backdrop-blur-md">
-              <dt className="order-2 text-sm text-white/70">{f.label}</dt>
-              <dd className="order-1 text-2xl font-bold tabular">{f.value}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
+          <m.dl variants={heroGroup} className="hidden gap-3 lg:grid">
+            <Fact label={servicesWord(data.services.length)}>
+              <CountUp value={data.services.length} delay={0.7} />
+            </Fact>
+            {cheapest !== null && (
+              <Fact label="стоимость">
+                <CountUp value={cheapest} delay={0.8} format={(n) => `от ${money(n >= cheapest ? cheapest : Math.round(n / 10000) * 10000, currency, locale)}`} />
+              </Fact>
+            )}
+            <Fact label="запись вперёд">
+              <CountUp value={data.policy.horizon_days} delay={0.9} format={(n) => `${Math.round(n)} дн.`} />
+            </Fact>
+          </m.dl>
+        </m.div>
+      </m.div>
     </header>
+  )
+}
+
+function Fact({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <m.div variants={factItem} className="grid min-w-48 gap-0.5 rounded-2xl border border-white/15 bg-black/45 px-5 py-4 text-white shadow-[0_18px_40px_-20px_rgb(0_0_0/0.8)] backdrop-blur-md">
+      <dt className="order-2 text-sm text-white/70">{label}</dt>
+      <dd className="order-1 text-[26px] leading-tight font-bold tabular">{children}</dd>
+    </m.div>
   )
 }
 
@@ -144,7 +192,7 @@ function AssistantCard() {
     <button
       type="button"
       onClick={chat.show}
-      className="pressable flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 text-left shadow-card outline-none focus-visible:ring-2 focus-visible:ring-focus lg:gap-4 lg:rounded-3xl lg:p-5"
+      className="pressable lift spotlight flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 text-left shadow-card outline-none focus-visible:ring-2 focus-visible:ring-focus lg:gap-4 lg:rounded-3xl lg:p-5"
     >
       <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent-subtle text-accent-text lg:size-12">
         <Bot className="size-5 lg:size-6" aria-hidden />
@@ -174,13 +222,13 @@ function BookNowCard({ className }: { className?: string }) {
   })
   const first = nearest.data?.slots[0]
   return (
-    <Card className={cn('grid gap-4 p-4 lg:flex lg:flex-col lg:gap-6 lg:rounded-3xl lg:p-8', className)}>
+    <Card className={cn('ring-glow grid gap-4 p-4 lg:flex lg:flex-col lg:gap-6 lg:rounded-3xl lg:p-8', className)}>
       <div className="flex items-start justify-between gap-3">
         <div className="grid gap-1 lg:gap-2">
-          <h2 className="text-lg font-semibold lg:text-[30px] lg:leading-tight lg:font-bold lg:tracking-tight">Записаться онлайн</h2>
+          <h2 className="text-lg font-semibold lg:text-gradient lg:text-[32px] lg:leading-tight lg:font-bold lg:tracking-tight">Записаться онлайн</h2>
           <p className="text-sm text-fg-muted lg:text-[17px]">Точная цена и свободное время — сразу, без звонка.</p>
         </div>
-        <CalendarClock className="size-6 shrink-0 text-accent-text lg:size-9" aria-hidden />
+        <CalendarClock className="size-6 shrink-0 text-accent-text lg:size-10 lg:drop-shadow-[0_6px_16px_var(--dp-accent)]" aria-hidden />
       </div>
       {featured && (
         <div className="flex items-center gap-2 rounded-xl bg-sunken px-3 py-2.5 text-sm lg:gap-3 lg:rounded-2xl lg:px-5 lg:py-4 lg:text-[17px]">
@@ -199,7 +247,7 @@ function BookNowCard({ className }: { className?: string }) {
       <Button
         size="lg"
         block
-        className="lg:h-14 lg:text-[17px]"
+        className="sheen lg:h-14 lg:text-[17px]"
         onClick={() => flow.start(vehicle ? { vehicle: { kind: 'saved', id: vehicle.id, body_type: vehicle.body_type, label: vehicle.nickname || `${vehicle.make} ${vehicle.model}` } } : {})}
       >
         Выбрать услугу и время <ArrowRight />
@@ -213,7 +261,7 @@ function BookNowCard({ className }: { className?: string }) {
               type="button"
               onClick={() => flow.start({ serviceId: s.id, ...(vehicle ? { vehicle: { kind: 'saved' as const, id: vehicle.id, body_type: vehicle.body_type, label: vehicle.nickname || `${vehicle.make} ${vehicle.model}` } } : {}) })}
               className={cn(
-                'pressable shrink-0 snap-start rounded-full border border-line bg-bg-elevated px-3.5 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-focus lg:px-4 lg:py-2.5 lg:text-[15px] lg:transition-colors lg:hover:border-accent-text/50',
+                'pressable shrink-0 snap-start rounded-full border border-line bg-bg-elevated px-3.5 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-focus lg:px-4 lg:py-2.5 lg:text-[15px] lg:transition-[border-color,background-color,transform] lg:duration-300 lg:hover:-translate-y-0.5 lg:hover:border-accent-text/50 lg:hover:bg-accent-subtle',
                 i >= 5 && 'hidden lg:inline-block',
                 i >= HOME_SERVICES && 'lg:hidden',
               )}
@@ -236,7 +284,7 @@ function UpcomingBooking() {
   return (
     <Section title="Ваша запись">
       <Link to={`/s/${slug}/history/${next.id}`} className="pressable block rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-focus lg:rounded-3xl">
-        <Card className="flex items-center gap-4 border-accent-text/40 p-4 lg:rounded-3xl lg:p-5">
+        <Card className="lift spotlight flex items-center gap-4 border-accent-text/40 p-4 lg:rounded-3xl lg:p-5">
           <div className="grid size-14 shrink-0 place-items-center rounded-xl bg-accent text-accent-fg lg:size-16 lg:rounded-2xl">
             <span className="text-[11px] uppercase leading-none lg:text-xs">{new Intl.DateTimeFormat(locale, { timeZone: tz, month: 'short' }).format(new Date(next.starts_at)).replace('.', '')}</span>
             <span className="text-xl leading-none font-semibold tabular lg:text-2xl">{new Intl.DateTimeFormat(locale, { timeZone: tz, day: 'numeric' }).format(new Date(next.starts_at))}</span>
@@ -268,7 +316,7 @@ function GarageGlance() {
     return (
       <Section title="Мой гараж">
         <Link to={`/s/${slug}/garage`} className="pressable block rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-focus lg:rounded-3xl">
-          <Card className="flex items-center gap-4 p-4 lg:rounded-3xl lg:p-5">
+          <Card className="lift spotlight flex items-center gap-4 p-4 lg:rounded-3xl lg:p-5">
             <VehicleGlyph className="h-10 w-20 shrink-0" />
             <div className="grid flex-1 gap-0.5 text-sm lg:text-[15px]">
               <p className="font-medium lg:text-lg lg:font-semibold">Добавьте автомобиль</p>
@@ -287,7 +335,7 @@ function GarageGlance() {
           const tip = v.suggestions[0]
           return (
             <StaggerItem key={v.id}>
-              <Card className="grid gap-3 p-4 lg:rounded-3xl lg:p-5">
+              <Card className="lift spotlight grid gap-3 p-4 lg:rounded-3xl lg:p-5">
                 <Link to={`/s/${slug}/garage/${v.id}`} className="flex items-center gap-3 outline-none lg:gap-4">
                   {v.photo?.url ? <img src={v.photo.url} alt="" className="size-12 rounded-xl object-cover lg:size-14" /> : <VehicleGlyph className="h-10 w-16 shrink-0 lg:w-20" />}
                   <div className="grid min-w-0 flex-1">
@@ -330,7 +378,7 @@ function StudioToday() {
     <Card className="hidden lg:flex lg:flex-1 lg:flex-col lg:gap-4 lg:rounded-3xl lg:p-6">
       <p className="text-sm font-semibold uppercase tracking-[0.08em] text-fg-subtle">Студия сегодня</p>
       <p className="flex items-center gap-2.5 text-xl font-semibold">
-        <span className={cn('size-2.5 rounded-full', status.open ? 'bg-success' : 'bg-fg-subtle')} aria-hidden />
+        <span className={cn('size-2.5 rounded-full', status.open ? 'pulse-dot bg-success' : 'bg-fg-subtle')} aria-hidden />
         {status.text}
       </p>
       {p.address && (
@@ -365,19 +413,19 @@ function PopularServices() {
         </Link>
       }
     >
-      <div className="scroll-x -mx-4 flex gap-3 px-4 pb-1 lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible lg:px-0 lg:pb-0">
+      <RevealGroup className="scroll-x -mx-4 flex gap-3 px-4 pb-1 lg:mx-0 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible lg:px-0 lg:pb-0">
         {data.services.map((s, i) => (
+          <RevealItem key={s.id} className={cn('w-[min(68vw,240px)] shrink-0 snap-start lg:w-auto', i >= HOME_SERVICES && 'lg:hidden')}>
           <Link
-            key={s.id}
             to={`/s/${slug}/services/${s.id}`}
-            className={cn(
-              'pressable group w-[min(68vw,240px)] shrink-0 snap-start rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-focus lg:w-auto lg:rounded-3xl',
-              i >= HOME_SERVICES && 'lg:hidden',
-            )}
+            className="pressable group block h-full rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-focus lg:rounded-3xl"
           >
-            <Card className="overflow-hidden lg:flex lg:h-full lg:flex-col lg:rounded-3xl lg:transition-colors lg:group-hover:border-line-strong">
-              <div className="overflow-hidden">
-                <Img media={mediaFor('service', s.id)[0]} sizes="(min-width: 1024px) 300px, 240px" className="aspect-[4/3] w-full lg:transition-transform lg:duration-500 lg:group-hover:scale-[1.04]" alt="" />
+            <Card className="lift spotlight overflow-hidden lg:flex lg:h-full lg:flex-col lg:rounded-3xl">
+              <div className="relative overflow-hidden">
+                <Img media={mediaFor('service', s.id)[0]} sizes="(min-width: 1024px) 300px, 240px" className="aspect-[4/3] w-full lg:transition-transform lg:duration-700 lg:group-hover:scale-[1.07]" alt="" />
+                <span className="absolute top-3 right-3 hidden size-10 translate-y-1 place-items-center rounded-full bg-black/55 text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 lg:grid" aria-hidden>
+                  <ArrowRight className="size-5 -rotate-45" />
+                </span>
               </div>
               <div className="grid gap-1 p-3 lg:flex lg:flex-1 lg:flex-col lg:gap-2 lg:p-5">
                 <p className="line-clamp-2 min-h-[2.5em] font-medium leading-tight lg:min-h-0 lg:text-lg lg:font-semibold">{s.name}</p>
@@ -395,9 +443,10 @@ function PopularServices() {
               </div>
             </Card>
           </Link>
+          </RevealItem>
         ))}
         {rest > 0 && (
-          <div
+          <RevealItem
             className="hidden flex-col justify-center gap-4 rounded-3xl border border-dashed border-line-strong bg-surface/40 p-7 lg:flex"
             style={{ gridColumn: `span ${rest} / span ${rest}` }}
           >
@@ -417,14 +466,16 @@ function PopularServices() {
                 </Button>
               )}
             </div>
-          </div>
+          </RevealItem>
         )}
-      </div>
+      </RevealGroup>
     </SiteSection>
   )
 }
 
 /** Desktop: the three booking steps, with the studio's real rules (confirmation, cancel window). */
+const STEP_ICONS = [ListChecks, CalendarClock, CarFront]
+
 function HowItWorks() {
   const { data } = useTenant()
   const steps = [
@@ -442,15 +493,26 @@ function HowItWorks() {
   ]
   return (
     <SiteSection size="xl" title="Как проходит запись" subtitle="Онлайн, без звонков и регистрации" className="hidden lg:grid">
-      <ol className="grid grid-cols-3 gap-6">
-        {steps.map((s, i) => (
-          <li key={s.title} className="grid content-start gap-3 rounded-3xl border border-line bg-surface p-8 shadow-card">
-            <span className="text-5xl font-bold tracking-tight text-accent-text tabular">{String(i + 1).padStart(2, '0')}</span>
-            <p className="text-xl font-semibold">{s.title}</p>
-            <p className="text-[16px] leading-relaxed text-fg-muted">{s.text}</p>
-          </li>
-        ))}
-      </ol>
+      <RevealGroup as="ol" className="grid grid-cols-3 gap-6">
+        {steps.map((s, i) => {
+          const Icon = STEP_ICONS[i]!
+          return (
+            <RevealItem as="li" key={s.title} className="flex">
+              <div className="lift spotlight relative grid w-full content-start gap-3 overflow-hidden rounded-3xl border border-line bg-surface p-8 shadow-card">
+                <span className="pointer-events-none absolute -top-6 -right-2 text-[140px] leading-none font-bold text-accent-text opacity-[0.07] tabular" aria-hidden>
+                  {i + 1}
+                </span>
+                <span className="grid size-14 place-items-center rounded-2xl bg-accent-subtle text-accent-text shadow-[0_10px_30px_-12px_var(--dp-accent)]">
+                  <Icon className="size-7" aria-hidden />
+                </span>
+                <span className="mt-2 text-sm font-semibold uppercase tracking-[0.14em] text-accent-text">Шаг {i + 1}</span>
+                <p className="text-[22px] leading-snug font-semibold">{s.title}</p>
+                <p className="text-[16px] leading-relaxed text-fg-muted">{s.text}</p>
+              </div>
+            </RevealItem>
+          )
+        })}
+      </RevealGroup>
     </SiteSection>
   )
 }
@@ -463,27 +525,28 @@ function Gallery() {
   const cols = n <= 3 ? n : n === 4 ? 2 : Math.min(4, Math.ceil(n / 2))
   return (
     <SiteSection size="xl" title="Работы студии">
-      <div
+      <RevealGroup
         className="scroll-x -mx-4 flex gap-3 px-4 pb-1 outline-none focus-visible:ring-2 focus-visible:ring-focus lg:mx-0 lg:flex-wrap lg:gap-6 lg:overflow-visible lg:px-0 lg:pb-0"
         role="region"
         aria-label="Работы студии"
         tabIndex={0}
       >
         {photos.map((m) => (
-          <figure
+          <RevealItem
+            as="figure"
             key={m.id}
-            className="w-[min(78vw,300px)] shrink-0 snap-start lg:relative lg:w-auto lg:[flex:1_1_var(--gallery-basis)] lg:overflow-hidden lg:rounded-3xl"
+            className="group w-[min(78vw,300px)] shrink-0 snap-start lg:relative lg:w-auto lg:[flex:1_1_var(--gallery-basis)] lg:overflow-hidden lg:rounded-3xl lg:shadow-card"
             style={{ '--gallery-basis': `calc(${100 / cols}% - 24px)` } as React.CSSProperties}
           >
-            <Img media={m} sizes="(min-width: 1024px) 640px, 300px" className="aspect-[4/3] w-full rounded-2xl lg:aspect-auto lg:h-[340px] lg:rounded-none" />
+            <Img media={m} sizes="(min-width: 1024px) 640px, 300px" className="aspect-[4/3] w-full rounded-2xl lg:aspect-auto lg:h-[340px] lg:rounded-none lg:transition-transform lg:duration-1000 lg:ease-out lg:group-hover:scale-[1.06]" />
             {m.caption && (
               <figcaption className="mt-1.5 px-1 text-sm text-fg-muted lg:absolute lg:inset-x-0 lg:bottom-0 lg:m-0 lg:bg-gradient-to-t lg:from-black/80 lg:to-transparent lg:px-6 lg:pt-14 lg:pb-5 lg:text-[17px] lg:font-medium lg:text-white">
                 {m.caption}
               </figcaption>
             )}
-          </figure>
+          </RevealItem>
         ))}
-      </div>
+      </RevealGroup>
     </SiteSection>
   )
 }
@@ -540,8 +603,9 @@ function About() {
       </Card>
 
       {/* Desktop: story, hours, how to get there */}
-      <div className="hidden grid-cols-12 gap-6 lg:grid">
-        <Card className="col-span-5 grid content-start gap-5 rounded-3xl p-8">
+      <RevealGroup className="hidden grid-cols-12 gap-6 lg:grid">
+        <RevealItem className="col-span-5 flex">
+        <Card className="lift spotlight grid w-full content-start gap-5 rounded-3xl p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.08em] text-fg-subtle">Студия</p>
           <p className="text-[19px] leading-relaxed text-fg">{p.description || p.tagline}</p>
           {p.socials.length > 0 && (
@@ -554,7 +618,9 @@ function About() {
             </div>
           )}
         </Card>
-        <Card className="col-span-3 grid content-start gap-4 rounded-3xl p-8">
+        </RevealItem>
+        <RevealItem className="col-span-3 flex">
+        <Card className="lift spotlight grid w-full content-start gap-4 rounded-3xl p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.08em] text-fg-subtle">Часы работы</p>
           <dl className="grid gap-1 text-[16px]">
             {byDay.map((d, i) => (
@@ -570,7 +636,9 @@ function About() {
             </p>
           ))}
         </Card>
-        <Card className="col-span-4 grid content-start gap-5 rounded-3xl p-8">
+        </RevealItem>
+        <RevealItem className="col-span-4 flex">
+        <Card className="lift spotlight grid w-full content-start gap-5 rounded-3xl p-8">
           <p className="text-sm font-semibold uppercase tracking-[0.08em] text-fg-subtle">Как нас найти</p>
           {p.address && <p className="text-[19px] leading-snug">{p.address}</p>}
           {p.phone && (
@@ -600,7 +668,8 @@ function About() {
             )}
           </div>
         </Card>
-      </div>
+        </RevealItem>
+      </RevealGroup>
     </SiteSection>
   )
 }

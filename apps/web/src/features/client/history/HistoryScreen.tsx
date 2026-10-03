@@ -77,9 +77,9 @@ function List({ items }: { items: BookingSummary[] }) {
         <StaggerItem as="li" key={b.id}>
           <Link
             to={`/s/${slug}/history/${b.id}`}
-            className="pressable flex items-center gap-3 rounded-2xl border border-line bg-surface p-3.5 shadow-card outline-none focus-visible:ring-2 focus-visible:ring-focus lg:gap-6 lg:rounded-3xl lg:p-5 lg:transition-colors lg:hover:border-line-strong"
+            className="pressable lift spotlight flex items-center gap-3 rounded-2xl border border-line bg-surface p-3.5 shadow-card outline-none focus-visible:ring-2 focus-visible:ring-focus lg:gap-6 lg:rounded-3xl lg:p-5"
           >
-            <span className="hidden size-16 shrink-0 place-items-center rounded-2xl bg-surface-2 lg:grid">
+            <span className="hidden size-16 shrink-0 place-items-center rounded-2xl bg-accent-subtle text-accent-text lg:grid">
               <span className="text-xs uppercase leading-none text-fg-muted">{new Intl.DateTimeFormat(locale, { timeZone: tz, month: 'short' }).format(new Date(b.starts_at)).replace('.', '')}</span>
               <span className="text-2xl leading-none font-bold tabular">{new Intl.DateTimeFormat(locale, { timeZone: tz, day: 'numeric' }).format(new Date(b.starts_at))}</span>
             </span>

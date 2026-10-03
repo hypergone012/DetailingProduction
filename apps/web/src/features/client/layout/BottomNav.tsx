@@ -32,7 +32,15 @@ export function BottomNav() {
                 )}
               >
                 {isActive && <m.span layoutId="bottom-nav-pill" className="absolute inset-x-2.5 top-1.5 h-8 rounded-full bg-accent-subtle" transition={spring} aria-hidden />}
-                <Icon className={cn('relative size-[22px] transition-colors', isActive && 'text-accent-text')} strokeWidth={isActive ? 2.2 : 1.8} aria-hidden />
+                <m.span
+                  className="relative"
+                  key={isActive ? 'on' : 'off'}
+                  initial={isActive ? { scale: 0.7, y: 2 } : false}
+                  animate={{ scale: 1, y: 0 }}
+                  transition={{ type: 'spring', stiffness: 520, damping: 18 }}
+                >
+                  <Icon className={cn('size-[22px] transition-colors', isActive && 'text-accent-text')} strokeWidth={isActive ? 2.2 : 1.8} aria-hidden />
+                </m.span>
                 <span className="relative">{tab.label}</span>
               </NavLink>
             </li>

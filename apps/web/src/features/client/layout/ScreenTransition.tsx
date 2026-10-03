@@ -47,7 +47,9 @@ export function ScreenTransition({ children }: { children: ReactNode }) {
   }, [location.key])
 
   return (
-    <AnimatePresence mode="wait" initial={false} custom={move}>
+    // `initial` stays on: the first screen fades in, and the entrance animations inside it
+    // (cover, sections) play on the first visit too — initial={false} would freeze them all.
+    <AnimatePresence mode="wait" custom={move}>
       <m.div
         key={location.pathname}
         custom={move}

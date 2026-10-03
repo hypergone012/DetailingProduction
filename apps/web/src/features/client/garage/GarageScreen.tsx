@@ -75,7 +75,7 @@ export function GarageScreen() {
               const next = profile?.bookings.filter((b) => b.vehicle_id === v.id && isUpcoming(b)).sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0]
               const tip = v.suggestions[0]
               return (
-                <StaggerItem as="li" key={v.id} className="lg:overflow-hidden lg:rounded-3xl lg:border lg:border-line lg:bg-surface lg:shadow-card">
+                <StaggerItem as="li" key={v.id} className="spotlight lg:overflow-hidden lg:rounded-3xl lg:border lg:border-line lg:bg-surface lg:shadow-card lg:transition-[border-color,box-shadow] lg:duration-500 lg:hover:border-accent-text/40 lg:hover:shadow-[0_26px_50px_-26px_var(--dp-accent)]">
                   <Link
                     to={`/s/${slug}/garage/${v.id}`}
                     className="pressable flex items-center gap-4 rounded-2xl border border-line bg-surface p-3 shadow-card outline-none focus-visible:ring-2 focus-visible:ring-focus lg:gap-6 lg:rounded-none lg:border-0 lg:p-6 lg:shadow-none lg:hover:bg-surface-2"

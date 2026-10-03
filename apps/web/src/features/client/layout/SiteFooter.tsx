@@ -1,6 +1,7 @@
 import { Mail, MapPin, Phone } from 'lucide-react'
 import { Link } from 'react-router'
 import { phonePretty } from '@/lib/format'
+import { Reveal } from '@/motion/Reveal'
 import { useTenant } from '@/tenant/TenantProvider'
 import { openStatus, WEEKDAY_NAMES } from '../shared/hours'
 import { TABS } from './tabs'
@@ -23,8 +24,8 @@ export function SiteFooter() {
     else groups.push({ from: r.name, to: r.name, text: r.text })
   }
   return (
-    <footer className="mt-20 hidden border-t border-line bg-bg-elevated lg:block">
-      <div className="mx-auto grid max-w-[1440px] grid-cols-12 gap-10 px-8 py-14">
+    <footer className="relative z-[1] mt-20 hidden border-t border-line bg-bg-elevated lg:block">
+      <Reveal className="mx-auto grid max-w-[1440px] grid-cols-12 gap-10 px-8 py-14">
         <div className="col-span-4 grid content-start gap-4">
           <Link to={`/s/${slug}`} className="flex items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-focus">
             {logo?.url && <img src={logo.url} alt="" className="size-12 rounded-xl border border-line bg-surface object-contain p-1.5" />}
@@ -32,7 +33,7 @@ export function SiteFooter() {
           </Link>
           {p.tagline && <p className="max-w-sm text-[15px] leading-relaxed text-fg-muted">{p.tagline}</p>}
           <p className="flex items-center gap-2 text-[15px]">
-            <span className={status.open ? 'size-2 rounded-full bg-success' : 'size-2 rounded-full bg-fg-subtle'} aria-hidden />
+            <span className={status.open ? 'pulse-dot size-2 rounded-full bg-success' : 'size-2 rounded-full bg-fg-subtle'} aria-hidden />
             {status.text}
           </p>
         </div>
@@ -82,7 +83,7 @@ export function SiteFooter() {
             ))}
           </dl>
         </div>
-      </div>
+      </Reveal>
       <div className="border-t border-line">
         <p className="mx-auto flex max-w-[1440px] justify-between gap-6 px-8 py-5 text-sm text-fg-subtle">
           <span>

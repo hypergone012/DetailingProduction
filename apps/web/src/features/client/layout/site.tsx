@@ -1,8 +1,11 @@
 import { MapPin, Phone } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useReducedMotion } from 'motion/react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { useAppTheme } from '@/theme/ThemeProvider'
 import { Card } from '@/components/Section'
 import { phonePretty } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { Reveal } from '@/motion/Reveal'
 import { useTenant } from '@/tenant/TenantProvider'
 
 /**
@@ -31,13 +34,13 @@ export function SiteSection({
   return (
     <section className={cn('grid content-start gap-3', size === 'xl' ? 'lg:gap-7' : 'lg:gap-4', className)}>
       {(title || action) && (
-        <div className="flex items-end justify-between gap-3 px-1 lg:px-0">
+        <Reveal className="flex items-end justify-between gap-3 px-1 lg:px-0">
           <div className="grid gap-1.5">
             {title && (
               <h2
                 className={cn(
                   'text-[13px] font-semibold uppercase tracking-[0.08em] text-fg-subtle lg:normal-case lg:text-fg',
-                  size === 'xl' ? 'lg:text-[34px] lg:leading-tight lg:font-bold lg:tracking-tight' : 'lg:text-xl lg:tracking-normal',
+                  size === 'xl' ? 'lg:text-gradient lg:text-[40px] lg:leading-tight lg:font-bold lg:tracking-tight' : 'lg:text-xl lg:tracking-normal',
                 )}
               >
                 {title}
@@ -46,9 +49,12 @@ export function SiteSection({
             {subtitle && <p className={cn('hidden text-fg-muted lg:block', size === 'xl' ? 'text-lg' : 'text-[15px]')}>{subtitle}</p>}
           </div>
           {action}
-        </div>
+        </Reveal>
       )}
-      {children}
+      {/* Several children keep the section's spacing between them. */}
+      <Reveal delay={0.08} className={cn('grid min-w-0 content-start gap-3', size === 'xl' ? 'lg:gap-7' : 'lg:gap-4')}>
+        {children}
+      </Reveal>
     </section>
   )
 }
@@ -74,4 +80,23 @@ export function StudioContactCard({ className }: { className?: string }) {
       )}
     </Card>
   )
+}
+
+/** Laptop/desktop layout (lg+), following window resizes. */
+export function useIsDesktop(): boolean {
+  const [desktop, setDesktop] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches)
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const on = () => setDesktop(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+  return desktop
+}
+
+/** True when motion should stay still: the OS setting or Profile → «Анимации: Меньше». */
+export function useStillMotion(): boolean {
+  const os = useReducedMotion()
+  const { motion } = useAppTheme()
+  return motion === 'reduce' || Boolean(os)
 }

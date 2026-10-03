@@ -6,6 +6,7 @@ import { duration, money } from '@/lib/format'
 import { useTenant } from '@/tenant/TenantProvider'
 import { useBookingFlow } from '../booking/flow'
 import { hasPriceRange, minPrice, priceFor, useProfile } from '../data'
+import { RevealGroup, RevealItem } from '@/motion/Reveal'
 import { SiteSection } from '../layout/site'
 
 /**
@@ -33,14 +34,15 @@ export function ServicePicks({ title, vehicleId, cols = 3 }: { title?: string; v
       }
       className="hidden lg:grid"
     >
-      <ul className={cols === 2 ? 'grid grid-cols-2 gap-5' : 'grid grid-cols-3 gap-5'}>
+      <RevealGroup as="ul" className={cols === 2 ? 'grid grid-cols-2 gap-5' : 'grid grid-cols-3 gap-5'}>
         {list.map((s) => {
           const mine = v ? priceFor(s, v.body_type) : null
           const href = `/s/${slug}/services/${s.id}`
           return (
-            <li key={s.id} className="group flex flex-col overflow-hidden rounded-3xl border border-line bg-surface shadow-card transition-colors hover:border-line-strong">
+            <RevealItem as="li" key={s.id} className="flex">
+              <div className="lift spotlight group flex w-full flex-col overflow-hidden rounded-3xl border border-line bg-surface shadow-card">
               <Link to={href} tabIndex={-1} aria-hidden className="overflow-hidden">
-                <Img media={mediaFor('service', s.id)[0]} sizes="320px" className="aspect-[16/10] w-full transition-transform duration-500 group-hover:scale-[1.04]" alt="" />
+                <Img media={mediaFor('service', s.id)[0]} sizes="320px" className="aspect-[16/10] w-full transition-transform duration-700 group-hover:scale-[1.07]" alt="" />
               </Link>
               <div className="flex flex-1 flex-col gap-3 p-5">
                 <Link to={href} className="rounded text-lg leading-snug font-semibold outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus">
@@ -64,10 +66,11 @@ export function ServicePicks({ title, vehicleId, cols = 3 }: { title?: string; v
                   </Button>
                 </div>
               </div>
-            </li>
+              </div>
+            </RevealItem>
           )
         })}
-      </ul>
+      </RevealGroup>
     </SiteSection>
   )
 }

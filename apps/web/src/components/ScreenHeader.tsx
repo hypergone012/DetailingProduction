@@ -71,7 +71,7 @@ export function ScreenHeader({
               large ? 'text-xl' : 'text-[17px]',
               !parent && 'pl-2',
               site && 'lg:pl-0 lg:font-bold lg:tracking-tight lg:whitespace-normal',
-              site && (large ? 'lg:text-[40px] lg:leading-tight' : 'lg:text-[32px] lg:leading-tight'),
+              site && (large ? 'lg:text-gradient lg:text-[44px] lg:leading-tight' : 'lg:text-gradient lg:text-[34px] lg:leading-tight'),
             )}
           >
             {title}

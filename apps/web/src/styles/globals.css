@@ -198,3 +198,209 @@ html[data-motion='reduce'] *::after {
   background-color: var(--dp-surface-2);
   background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in oklab, var(--dp-text) 7%, transparent) 6px 8px);
 }
+
+/* ---------------------------------------------------------------------------------------
+ * Client site: premium surface. Light type on photos in every theme, ambient glow, hover
+ * depth, sheen on key buttons. Motion stops with the OS setting or Profile → «Анимации».
+ * ------------------------------------------------------------------------------------- */
+
+@property --dp-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* Text on a darkened photo: always light, tinted toward the theme accent, with depth. */
+@utility text-on-photo {
+  color: #fff;
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.45)) drop-shadow(0 14px 34px rgb(0 0 0 / 0.55));
+  @supports (color: oklch(from red l c h)) {
+    background-image: linear-gradient(
+      100deg,
+      #fff 0%,
+      #fff 22%,
+      oklch(from var(--dp-accent) max(l, 0.84) min(c, 0.17) h) 58%,
+      #fff 80%,
+      oklch(from var(--dp-accent) max(l, 0.88) min(c, 0.12) h) 100%
+    );
+    background-size: 170% 100%;
+    background-position: 0% 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: dp-title-sheen 2.6s 0.5s var(--ease-out-quart) both;
+  }
+}
+@keyframes dp-title-sheen {
+  from { background-position: 100% 0; }
+  to { background-position: 0% 0; }
+}
+
+/* Headline on the page background: theme text into the accent, with a soft accent glow. */
+@utility text-gradient {
+  background-image: linear-gradient(100deg, var(--dp-text) 25%, var(--dp-accent-text) 115%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 6px 18px color-mix(in oklab, var(--dp-accent) 26%, transparent));
+}
+
+/* Primary button on a photo: a light version of the accent with dark text, in any theme. */
+@utility btn-on-photo {
+  background: #fff;
+  color: #0c0d10;
+  box-shadow: 0 14px 36px -14px rgb(0 0 0 / 0.7);
+  @supports (color: oklch(from red l c h)) {
+    background: oklch(from var(--dp-accent) max(l, 0.82) min(c, 0.16) h);
+    box-shadow:
+      0 0 0 1px oklch(from var(--dp-accent) max(l, 0.9) min(c, 0.1) h / 0.6) inset,
+      0 16px 40px -14px oklch(from var(--dp-accent) max(l, 0.7) c h / 0.65);
+  }
+  &:hover {
+    filter: brightness(1.06);
+  }
+}
+
+/* A light sweep across a key call to action, every few seconds. */
+@utility sheen {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    pointer-events: none;
+    background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.38) 50%, transparent 65%);
+    transform: translateX(-120%);
+    animation: dp-sheen 5.5s 1.2s var(--ease-out-quart) infinite;
+  }
+}
+@keyframes dp-sheen {
+  0% { transform: translateX(-120%); }
+  22%, 100% { transform: translateX(120%); }
+}
+
+/* A slowly travelling light on the border of the main booking card. */
+@utility ring-glow {
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: conic-gradient(
+      from var(--dp-angle),
+      transparent 0 58%,
+      color-mix(in oklab, var(--dp-accent) 90%, white) 72%,
+      transparent 86%
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: dp-spin 7s linear infinite;
+    pointer-events: none;
+  }
+}
+@keyframes dp-spin {
+  to { --dp-angle: 360deg; }
+}
+
+@layer components {
+  /* Hover depth for cards (mouse only): rise, accent-tinted shadow. */
+  @media (hover: hover) and (pointer: fine) {
+    .lift {
+      transition:
+        transform 420ms var(--ease-out-quart),
+        box-shadow 420ms var(--ease-out-quart),
+        border-color 300ms ease;
+    }
+    .lift:hover {
+      transform: translateY(-5px);
+      border-color: color-mix(in oklab, var(--dp-accent) 40%, var(--dp-border));
+      box-shadow:
+        0 26px 50px -26px color-mix(in oklab, var(--dp-accent) 60%, transparent),
+        var(--shadow-card);
+    }
+    /* Cursor spotlight: a soft accent light that follows the pointer inside the card. */
+    .spotlight {
+      position: relative;
+      isolation: isolate;
+    }
+    .spotlight::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      border-radius: inherit;
+      pointer-events: none;
+      background: radial-gradient(380px circle at var(--mx, 50%) var(--my, 0%), color-mix(in oklab, var(--dp-accent) 16%, transparent), transparent 55%);
+      opacity: 0;
+      transition: opacity 300ms ease;
+    }
+    .spotlight:hover::before {
+      opacity: 1;
+    }
+  }
+
+  /* "Open now" dot. */
+  .pulse-dot {
+    position: relative;
+  }
+  .pulse-dot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: inherit;
+    animation: dp-pulse 2.2s var(--ease-out-quart) infinite;
+  }
+
+  /* Ambient light behind the client site: two slow accent glows (no blur filter, cheap). */
+  .dp-aurora {
+    position: fixed;
+    inset: -20vh -20vw;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.55;
+    background:
+      radial-gradient(38vw 30vw at 18% 12%, color-mix(in oklab, var(--dp-accent) 20%, transparent), transparent 70%),
+      radial-gradient(34vw 28vw at 86% 30%, color-mix(in oklab, var(--dp-accent) 12%, transparent), transparent 70%),
+      radial-gradient(40vw 30vw at 50% 100%, color-mix(in oklab, var(--dp-accent) 9%, transparent), transparent 70%);
+    animation: dp-drift 26s ease-in-out infinite alternate;
+  }
+  [data-scheme='light'] .dp-aurora {
+    opacity: 0.45;
+  }
+
+  /* Photos fade in when loaded instead of popping. */
+  img[data-fade] {
+    opacity: 0;
+    transition: opacity 650ms var(--ease-out-quart);
+  }
+  img[data-fade][data-loaded] {
+    opacity: 1;
+  }
+}
+@keyframes dp-pulse {
+  0% { transform: scale(1); opacity: 0.7; }
+  80%, 100% { transform: scale(3.2); opacity: 0; }
+}
+@keyframes dp-drift {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  100% { transform: translate3d(3vw, 4vh, 0) rotate(6deg); }
+}
+
+/* Reduced motion: no continuous effects at all (the generic rule above only shortens them). */
+@media (prefers-reduced-motion: reduce) {
+  .sheen::after, .ring-glow::before, .pulse-dot::after, .dp-aurora, .text-on-photo { animation: none !important; }
+  .sheen::after { display: none; }
+}
+html[data-motion='reduce'] .sheen::after,
+html[data-motion='reduce'] .pulse-dot::after { display: none; }
+html[data-motion='reduce'] .ring-glow::before,
+html[data-motion='reduce'] .dp-aurora,
+html[data-motion='reduce'] .text-on-photo { animation: none !important; }

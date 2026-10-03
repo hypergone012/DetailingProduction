@@ -1,12 +1,15 @@
 import type { ServiceView } from '@dp/core/api/contracts'
 import { Bot, Check, ChevronRight, Clock, Phone } from 'lucide-react'
+import { m } from 'motion/react'
 import { useState } from 'react'
+import { spring } from '@/motion/tokens'
 import { Link } from 'react-router'
 import { useChatParam } from '@/components/assistant/chatParam'
 import { Img } from '@/components/Img'
 import { Button } from '@/components/ui/button'
 import { duration, money } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { RevealGroup, RevealItem } from '@/motion/Reveal'
 import { Stagger, StaggerItem } from '@/motion/Stagger'
 import { useTenant } from '@/tenant/TenantProvider'
 import { ScreenHeader } from '@/components/ScreenHeader'
@@ -41,12 +44,15 @@ export function ServicesScreen() {
                 aria-pressed={cat === c}
                 onClick={() => setCat(c)}
                 className={cn(
-                  'pressable h-9 shrink-0 rounded-full border px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-focus lg:h-12 lg:px-6 lg:text-base lg:font-medium lg:transition-colors',
-                  cat === c ? 'border-transparent bg-accent text-accent-fg' : 'border-line bg-surface text-fg-muted lg:hover:text-fg',
+                  'pressable relative h-9 shrink-0 rounded-full border px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-focus lg:h-12 lg:px-6 lg:text-base lg:font-medium lg:transition-colors',
+                  cat === c ? 'border-transparent text-accent-fg' : 'border-line bg-surface text-fg-muted lg:hover:text-fg',
                 )}
               >
-                {c === null ? 'Все' : (CATEGORY_LABELS[c] ?? c)}
-                {c !== null && <span className="ml-2 hidden opacity-60 lg:inline">{data.services.filter((s) => s.category === c).length}</span>}
+                {cat === c && <m.span layoutId="service-category" className="absolute inset-0 rounded-full bg-accent shadow-[0_10px_28px_-12px_var(--dp-accent)]" transition={spring} aria-hidden />}
+                <span className="relative">
+                  {c === null ? 'Все' : (CATEGORY_LABELS[c] ?? c)}
+                  {c !== null && <span className="ml-2 hidden opacity-60 lg:inline">{data.services.filter((s) => s.category === c).length}</span>}
+                </span>
               </button>
             ))}
           </div>
@@ -81,18 +87,18 @@ export function ServicesScreen() {
         </Stagger>
 
         {/* Desktop: wide cards, two per row; an odd last slot gets the help card */}
-        <Stagger as="ul" className="hidden grid-cols-2 gap-6 lg:grid" key={`d-${cat ?? 'all'}`}>
+        <RevealGroup as="ul" className="hidden grid-cols-2 gap-6 lg:grid" key={`d-${cat ?? 'all'}`}>
           {list.map((s) => (
-            <StaggerItem as="li" key={s.id} className="flex">
+            <RevealItem as="li" key={s.id} className="flex">
               <ServiceCard service={s} />
-            </StaggerItem>
+            </RevealItem>
           ))}
           {list.length % 2 === 1 && (
-            <StaggerItem as="li" className="flex">
+            <RevealItem as="li" className="flex">
               <HelpCard />
-            </StaggerItem>
+            </RevealItem>
           )}
-        </Stagger>
+        </RevealGroup>
       </div>
     </>
   )
@@ -105,14 +111,15 @@ function ServiceCard({ service: s }: { service: ServiceView }) {
   const vehicle = profile?.vehicles.find((v) => !s.allowed_body_types || s.allowed_body_types.includes(v.body_type))
   const href = `/s/${slug}/services/${s.id}`
   return (
-    <article className="group flex w-full overflow-hidden rounded-3xl border border-line bg-surface shadow-card transition-colors hover:border-line-strong">
+    <article className="lift spotlight group flex w-full overflow-hidden rounded-3xl border border-line bg-surface shadow-card">
       <Link to={href} tabIndex={-1} aria-hidden className="relative w-[40%] shrink-0 overflow-hidden">
-        <Img media={mediaFor('service', s.id)[0]} sizes="(min-width: 1440px) 290px, 20vw" className="absolute inset-0 size-full transition-transform duration-500 group-hover:scale-[1.04]" alt="" />
+        <Img media={mediaFor('service', s.id)[0]} sizes="(min-width: 1440px) 290px, 20vw" className="absolute inset-0 size-full transition-transform duration-700 group-hover:scale-[1.07]" alt="" />
+        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-black/25" aria-hidden />
       </Link>
       <div className="flex min-w-0 flex-1 flex-col gap-3 p-6">
         <div className="grid gap-1.5">
           <span className="text-xs font-semibold uppercase tracking-[0.1em] text-accent-text">{CATEGORY_LABELS[s.category] ?? s.category}</span>
-          <h2 className="text-[22px] leading-tight font-semibold">
+          <h2 className="text-[24px] leading-tight font-bold tracking-tight">
             <Link to={href} className="rounded outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus">
               {s.name}
             </Link>
@@ -135,7 +142,7 @@ function ServiceCard({ service: s }: { service: ServiceView }) {
               <Clock className="size-4" aria-hidden />
               {s.multi_day ? 'несколько дней' : duration(s.duration_min)}
             </span>
-            <span className="text-2xl font-bold tabular">
+            <span className="text-[28px] leading-tight font-bold tracking-tight tabular">
               {hasPriceRange(s) ? 'от ' : ''}
               {money(minPrice(s), currency, locale)}
             </span>
@@ -145,6 +152,7 @@ function ServiceCard({ service: s }: { service: ServiceView }) {
               <Link to={href}>Подробнее</Link>
             </Button>
             <Button
+              className="sheen"
               onClick={() =>
                 flow.start({
                   serviceId: s.id,
