@@ -48,7 +48,7 @@ export function TodayScreen() {
               </Button>
             )}
             {canManage && (
-              <Button size="sm" onClick={() => sheets.open({ new: 'booking', day })}>
+              <Button size="sm" className="sheen" onClick={() => sheets.open({ new: 'booking', day })}>
                 <CalendarPlus /> Запись
               </Button>
             )}
@@ -109,7 +109,7 @@ function AgendaRow({ item, resource, showDay = false }: { item: CalendarItem; re
   const action = nextActions(b.status, b.starts_at).find((a) => a.primary)
   const set = useOwnerMutation((status: BookingStatus) => rpc('owner_set_booking_status', { p_booking: b.id, p_status: status }))
   return (
-    <li className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-3">
+    <li className="lift spotlight flex items-center gap-3 rounded-2xl border border-line bg-surface p-3">
       <button type="button" onClick={() => sheets.open({ booking: b.id })} className="flex min-w-0 flex-1 items-center gap-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-focus">
         <span className="grid w-14 shrink-0 justify-items-center rounded-xl bg-sunken py-2">
           <Clock className="size-3.5 text-fg-subtle" aria-hidden />
@@ -150,6 +150,9 @@ function MoneyPanel() {
   const month = useStats(addDays(day, -29), day)
   const next = useStats(day, addDays(day, 30))
   const m = (cents: number | null | undefined) => (cents === null || cents === undefined ? '—' : money(cents, currency, locale))
+  // Counting money: whole hundreds of rubles on the way, the exact sum at the end.
+  const countMoney = (total: number) => (n: number) => money(n >= total ? total : Math.round(n / 10000) * 10000, currency, locale)
+  const mc = (cents: number | null | undefined) => (cents === null || cents === undefined ? {} : { count: cents, format: countMoney(cents) })
   const util = month.data?.utilization.ratio
   return (
     <div className="grid content-start gap-6">
@@ -161,9 +164,9 @@ function MoneyPanel() {
             <Stat label="Записей" value={todayStats.data.scheduled.count} hint={`выполнено ${todayStats.data.completed.count}`} />
             {canManage && todayStats.data.money_visible ? (
               <>
-                <Stat label="Выполнено работ" value={m(todayStats.data.completed.value_cents)} />
-                <Stat label="Получено оплат" value={m(todayStats.data.payments?.received_cents)} />
-                <Stat label="Ещё впереди сегодня" value={m(todayStats.data.upcoming.value_cents)} hint="не выручка, пока не выполнено" tone="muted" />
+                <Stat label="Выполнено работ" value={m(todayStats.data.completed.value_cents)} {...mc(todayStats.data.completed.value_cents)} />
+                <Stat label="Получено оплат" value={m(todayStats.data.payments?.received_cents)} {...mc(todayStats.data.payments?.received_cents)} />
+                <Stat label="Ещё впереди сегодня" value={m(todayStats.data.upcoming.value_cents)} {...mc(todayStats.data.upcoming.value_cents)} hint="не выручка, пока не выполнено" tone="muted" />
               </>
             ) : (
               <Stat label="Впереди" value={todayStats.data.upcoming.count} />
@@ -180,9 +183,9 @@ function MoneyPanel() {
           <div className="grid grid-cols-2 gap-3">
             {month.data.money_visible && (
               <>
-                <Stat label="Выполнено работ" value={m(month.data.completed.value_cents)} hint={`${month.data.completed.count} ${plural(month.data.completed.count, 'визит', 'визита', 'визитов')}`} />
-                <Stat label="Получено оплат" value={m(month.data.payments?.received_cents)} hint={month.data.payments?.refunds_cents ? `возвраты ${m(month.data.payments.refunds_cents)}` : undefined} />
-                <Stat label="Средний чек" value={m(month.data.average_ticket_cents)} />
+                <Stat label="Выполнено работ" value={m(month.data.completed.value_cents)} {...mc(month.data.completed.value_cents)} hint={`${month.data.completed.count} ${plural(month.data.completed.count, 'визит', 'визита', 'визитов')}`} />
+                <Stat label="Получено оплат" value={m(month.data.payments?.received_cents)} {...mc(month.data.payments?.received_cents)} hint={month.data.payments?.refunds_cents ? `возвраты ${m(month.data.payments.refunds_cents)}` : undefined} />
+                <Stat label="Средний чек" value={m(month.data.average_ticket_cents)} {...mc(month.data.average_ticket_cents)} />
               </>
             )}
             <Stat label="Загрузка" value={util === null || util === undefined ? '—' : `${Math.round(util * 100)}%`} hint="занято от рабочего времени" />
@@ -195,7 +198,7 @@ function MoneyPanel() {
       </Section>
       {canManage && next.data?.money_visible && (
         <Section title="В записи на 30 дней вперёд">
-          <Stat label="Запланировано" value={m(next.data.upcoming.value_cents)} hint={`${next.data.upcoming.count} ${plural(next.data.upcoming.count, 'запись', 'записи', 'записей')} · это будущие деньги, не выручка`} tone="muted" />
+          <Stat label="Запланировано" value={m(next.data.upcoming.value_cents)} {...mc(next.data.upcoming.value_cents)} hint={`${next.data.upcoming.count} ${plural(next.data.upcoming.count, 'запись', 'записи', 'записей')} · это будущие деньги, не выручка`} tone="muted" />
         </Section>
       )}
     </div>

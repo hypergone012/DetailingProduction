@@ -5,7 +5,9 @@ import { StatusScreen } from '@/app/StatusScreen'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { errorMessage } from '@/lib/api/http'
+import { m } from 'motion/react'
 import { MotionProvider } from '@/motion/MotionProvider'
+import { ease } from '@/motion/tokens'
 import { TenantHead } from '@/tenant/TenantHead'
 import { useTenant } from '@/tenant/TenantProvider'
 import { ThemeProvider } from '@/theme/ThemeProvider'
@@ -128,10 +130,12 @@ function AssistantMount() {
 function OwnerShell() {
   usePrefetch()
   const { slug } = useTenant()
+  const { pathname } = useLocation()
   return (
     <>
       <main className="min-h-dvh pb-[calc(var(--dp-nav-height)+var(--dp-safe-bottom)+8px)] md:pb-8 md:pl-[88px]">
         <Suspense fallback={<Splash />}>
+          <m.div key={pathname} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.28, ease: ease.out }}>
           <Routes>
             <Route path="owner" element={<TodayScreen />} />
             <Route path="owner/calendar" element={<CalendarScreen />} />
@@ -142,6 +146,7 @@ function OwnerShell() {
             <Route path="owner/settings" element={<SettingsScreen />} />
             <Route path="*" element={<Navigate to={`/s/${slug}/owner`} replace />} />
           </Routes>
+          </m.div>
         </Suspense>
       </main>
       <OwnerNav />
