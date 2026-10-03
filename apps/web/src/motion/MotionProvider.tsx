@@ -1,14 +1,15 @@
 import { LazyMotion, MotionConfig, useReducedMotion } from 'motion/react'
 import type { ReactNode } from 'react'
 import { useAppTheme } from '@/theme/ThemeProvider'
-
-// Animation features load after first paint; until then `m.*` elements render statically.
-const loadFeatures = () => import('./features').then((mod) => mod.default)
+import features from './features'
 
 /**
  * Respects the OS "reduce motion" setting and the in-app override (Profile → Анимации): every
  * animation then jumps to its final state. (`reducedMotion` alone only skips motion's x/y/scale;
  * moves are animated as a whole `transform`, see tokens.ts.)
+ *
+ * The animation features load with the app, not after it: entrances start hidden, and waiting
+ * for a second request before anything could appear made every first screen late.
  */
 export function MotionProvider({ children }: { children: ReactNode }) {
   const { motion } = useAppTheme()
@@ -16,7 +17,7 @@ export function MotionProvider({ children }: { children: ReactNode }) {
   const still = motion === 'reduce' || Boolean(os)
   return (
     <MotionConfig reducedMotion={motion === 'reduce' ? 'always' : 'user'} skipAnimations={still}>
-      <LazyMotion features={loadFeatures} strict>
+      <LazyMotion features={features} strict>
         {children}
       </LazyMotion>
     </MotionConfig>

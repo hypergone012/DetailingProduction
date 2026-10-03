@@ -57,24 +57,16 @@ function useSpotlight() {
 }
 
 /**
- * Prefetches the other screens once the page has fully loaded (cover photo included) and the
- * browser is idle, so it never competes with the first screen. Skipped with Data Saver.
+ * Prefetches the other screens as soon as the first one is up and the browser is idle, so a
+ * tab opens without waiting for its code. Skipped with Data Saver.
  */
 function usePrefetch() {
   useEffect(() => {
     const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
     if (connection?.saveData) return
-    let handle = 0
-    const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1200))
-    const start = () => {
-      handle = idle(() => Object.values(load).forEach((l) => void l().catch(() => undefined)), { timeout: 4000 }) as number
-    }
-    if (document.readyState === 'complete') start()
-    else window.addEventListener('load', start, { once: true })
-    return () => {
-      window.removeEventListener('load', start)
-      ;(window.cancelIdleCallback ?? window.clearTimeout)(handle)
-    }
+    const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 300))
+    const handle = idle(() => Object.values(load).forEach((l) => void l().catch(() => undefined)), { timeout: 1500 })
+    return () => (window.cancelIdleCallback ?? window.clearTimeout)(handle as number)
   }, [])
 }
 

@@ -10,8 +10,8 @@ export function Section({ title, action, children, className }: { title?: string
       className={cn('grid gap-3', className)}
       initial={{ opacity: 0, transform: move(0, 14) }}
       whileInView={{ opacity: 1, ...settled }}
-      viewport={{ once: true, amount: 0.1 }}
-      transition={{ duration: 0.5, ease: ease.out }}
+      viewport={{ once: true, amount: 0.04 }}
+      transition={{ duration: 0.35, ease: ease.out }}
     >
       {(title || action) && (
         <div className="flex items-end justify-between gap-3 px-1">

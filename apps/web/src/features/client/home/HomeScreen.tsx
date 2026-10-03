@@ -56,19 +56,19 @@ export function HomeScreen() {
   )
 }
 
-const heroGroup: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.12, delayChildren: 0.2 } } }
+const heroGroup: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } } }
 const heroItem: Variants = BLUR
   ? {
       hidden: { opacity: 0, transform: move(0, 24), filter: 'blur(10px)' },
-      show: { opacity: 1, ...settled, filter: 'blur(0px)', transition: { duration: 0.9, ease: ease.out } },
+      show: { opacity: 1, ...settled, filter: 'blur(0px)', transition: { duration: 0.7, ease: ease.out } },
     }
   : {
       hidden: { opacity: 0, transform: move(0, 24) },
-      show: { opacity: 1, ...settled, transition: { duration: 0.8, ease: ease.out } },
+      show: { opacity: 1, ...settled, transition: { duration: 0.6, ease: ease.out } },
     }
 const factItem: Variants = {
   hidden: { opacity: 0, transform: move(36) },
-  show: { opacity: 1, ...settled, transition: { duration: 0.9, ease: ease.out } },
+  show: { opacity: 1, ...settled, transition: { duration: 0.7, ease: ease.out } },
 }
 
 function StudioHero() {

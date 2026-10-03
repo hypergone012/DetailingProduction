@@ -55,7 +55,12 @@ export default async function globalSetup() {
     slug: `e2e-${id.slice(0, 8)}`,
     name,
     status: 'demo',
-    services: [{ key: 'wash', name: 'Мойка кузова', duration_min: 60, buffer_after_min: 15, price_cents: 250000 }] as never,
+    // Two categories, like a real studio: the services screen then shows the category switcher
+    // (a shared-layout pill), which once kept tab transitions from finishing.
+    services: [
+      { key: 'wash', name: 'Мойка кузова', category: 'wash', duration_min: 60, buffer_after_min: 15, price_cents: 250000 },
+      { key: 'interior', name: 'Химчистка салона', category: 'interior', duration_min: 120, buffer_after_min: 15, price_cents: 900000 },
+    ] as never,
   })
   const pub = await fetch(`${GATEWAY}/rest/v1/rpc/api_admin_publish_tenant`, { method: 'POST', headers: svc, body: JSON.stringify({ p_config: config, p_config_hash: 'e2e', p_overwrite: false }) })
   if (!pub.ok) throw new Error(`publish failed: ${pub.status} ${await pub.text()}`)

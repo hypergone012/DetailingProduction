@@ -11,14 +11,15 @@ export const BLUR = typeof window !== 'undefined' && window.matchMedia('(min-wid
 const rise: Variants = BLUR
   ? {
       hidden: { opacity: 0, transform: move(0, 26), filter: 'blur(6px)' },
-      show: { opacity: 1, ...settled, filter: 'blur(0px)', transition: { duration: 0.7, ease: ease.out } },
+      show: { opacity: 1, ...settled, filter: 'blur(0px)', transition: { duration: 0.5, ease: ease.out } },
     }
   : {
       hidden: { opacity: 0, transform: move(0, 18) },
-      show: { opacity: 1, ...settled, transition: { duration: 0.55, ease: ease.out } },
+      show: { opacity: 1, ...settled, transition: { duration: 0.4, ease: ease.out } },
     }
 
-const VIEWPORT = { once: true, amount: 0.12, margin: '0px 0px -6% 0px' } as const
+// Starts as soon as a block peeks into view, so fast scrolling never waits for content.
+const VIEWPORT = { once: true, amount: 0.04, margin: '0px 0px -2% 0px' } as const
 
 export function Reveal({ children, className, delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
   return (
@@ -28,7 +29,7 @@ export function Reveal({ children, className, delay = 0 }: { children: ReactNode
   )
 }
 
-const group: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } } }
+const group: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.05, delayChildren: 0.02 } } }
 
 /** A list or grid whose items rise one after another when it scrolls into view. */
 export function RevealGroup({

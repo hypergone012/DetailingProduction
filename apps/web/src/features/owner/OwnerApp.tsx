@@ -142,7 +142,7 @@ function OwnerShell() {
     <>
       <main className="min-h-dvh pb-[calc(var(--dp-nav-height)+var(--dp-safe-bottom)+8px)] md:pb-8 md:pl-[88px]">
         <Suspense fallback={<Splash />}>
-          <m.div key={pathname} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.28, ease: ease.out }}>
+          <m.div key={pathname} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, ease: ease.out }}>
           <Routes>
             <Route path="owner" element={<TodayScreen />} />
             <Route path="owner/calendar" element={<CalendarScreen />} />
