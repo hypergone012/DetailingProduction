@@ -37,10 +37,12 @@ registerRoute(
 )
 
 // Public studio data: /functions/v1/public-api/t/<slug> and its manifest. Nothing else.
-registerRoute(
-  ({ url, request }) => request.method === 'GET' && /\/functions\/v1\/public-api\/t\/[a-z0-9-]+(\/manifest\.webmanifest)?$/.test(url.pathname),
-  new StaleWhileRevalidate({ cacheName: 'dp-public-api', plugins: [new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 86400 })] }),
-)
+const studioData = ({ url, request }: { url: URL; request: Request }) =>
+  request.method === 'GET' && /\/functions\/v1\/public-api\/t\/[a-z0-9-]+(\/manifest\.webmanifest)?$/.test(url.pathname)
+const studioCache = { cacheName: 'dp-public-api', plugins: [new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 86400 })] }
+// The owner cabinet asks for fresh data (`cache: 'no-cache'`) so its own edits show at once.
+registerRoute((o) => studioData(o) && o.request.cache === 'no-cache', new NetworkFirst({ ...studioCache, networkTimeoutSeconds: 6 }))
+registerRoute(studioData, new StaleWhileRevalidate(studioCache))
 
 registerRoute(
   ({ url }) => /\/(functions|rest|auth|storage)\/v1\//.test(url.pathname),

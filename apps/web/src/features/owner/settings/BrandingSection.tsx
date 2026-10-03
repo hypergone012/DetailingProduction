@@ -1,6 +1,6 @@
 import { accentIssues } from '@dp/core/theme/accent'
 import { DEFAULT_THEME_PRESET, isThemePresetId, resolveTheme, THEME_PRESET_IDS, THEME_PRESETS, type ThemePresetId } from '@dp/core/theme/presets'
-import { Camera, Check } from 'lucide-react'
+import { Camera, Check, Wand2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Img } from '@/components/Img'
 import { Card, Section } from '@/components/Section'
@@ -14,9 +14,9 @@ import { tenantQueryKey, useTenant } from '@/tenant/TenantProvider'
 import { rpc } from '../api/client'
 import type { SettingsRow } from '../api/types'
 import { useOwner, useOwnerMutation } from '../data'
-import { PHOTO_SIDES, uploadImage } from '../shared/upload'
+import { PHOTO_SIDES, uploadAppIcon, uploadImage } from '../shared/upload'
 
-/** Studio branding for clients: theme preset, accent, logo, cover photo. */
+/** Studio branding for clients: theme preset, accent, logo, app icon, cover photo. */
 export function BrandingSection({ settings }: { settings: SettingsRow }) {
   const { tenantId, slug } = useOwner()
   const { mediaByKey, mediaFor, data } = useTenant()
@@ -31,6 +31,8 @@ export function BrandingSection({ settings }: { settings: SettingsRow }) {
   )
   const logo = mediaByKey(data.branding.logoKey) ?? mediaFor('logo')[0]
   const hero = mediaByKey(data.branding.heroKey) ?? mediaFor('hero')[0]
+  // Icons of a transparent logo sit on the saved theme's background.
+  const iconBackground = resolveTheme(isThemePresetId(settings.branding.themePreset) ? settings.branding.themePreset : DEFAULT_THEME_PRESET, settings.branding.accent ?? null).bg
 
   return (
     <Section title="Брендинг для клиентов">
@@ -95,7 +97,8 @@ export function BrandingSection({ settings }: { settings: SettingsRow }) {
       </Card>
 
       <Card className="grid gap-4 p-4">
-        <ImageSlot label="Логотип" kind="logo" current={logo} square onUploaded={() => save.mutate({ logoKey: null })} />
+        <ImageSlot label="Логотип" kind="logo" current={logo} square iconBackground={iconBackground} onUploaded={() => save.mutate({ logoKey: null })} />
+        <AppIconSlot logo={logo} iconBackground={iconBackground} />
         <ImageSlot label="Обложка" kind="hero" current={hero} onUploaded={() => save.mutate({ heroKey: null })} />
         <label className="flex items-start justify-between gap-3 border-t border-line pt-4">
           <span className="grid gap-0.5">
@@ -109,7 +112,22 @@ export function BrandingSection({ settings }: { settings: SettingsRow }) {
   )
 }
 
-function ImageSlot({ label, kind, current, square = false, onUploaded }: { label: string; kind: 'logo' | 'hero'; current: Parameters<typeof Img>[0]['media']; square?: boolean; onUploaded: () => void }) {
+function ImageSlot({
+  label,
+  kind,
+  current,
+  square = false,
+  iconBackground,
+  onUploaded,
+}: {
+  label: string
+  kind: 'logo' | 'hero'
+  current: Parameters<typeof Img>[0]['media']
+  square?: boolean
+  /** Logo only: the app icon is rebuilt from the new logo. */
+  iconBackground?: string
+  onUploaded: () => void
+}) {
   const { tenantId, slug } = useOwner()
   const ref = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
@@ -121,6 +139,7 @@ function ImageSlot({ label, kind, current, square = false, onUploaded }: { label
         p_tenant: tenantId,
         p_media: { kind, bucket: 'public-media', path: up.path, variants: up.variants, width: up.width, height: up.height, alt: label, sort_order: -Math.floor(Date.now() / 1000) },
       })
+      if (iconBackground) await uploadAppIcon(tenantId, file, iconBackground)
     },
     [tenantQueryKey(slug)],
   )
@@ -144,6 +163,81 @@ function ImageSlot({ label, kind, current, square = false, onUploaded }: { label
         onChange={(e) => {
           const f = e.target.files?.[0]
           if (f) upload.mutate(f, { onSuccess: onUploaded, onError: (err) => setError(errorMessage(err)) })
+          e.target.value = ''
+        }}
+      />
+    </div>
+  )
+}
+
+/**
+ * The icon clients see on the phone's home screen and in the install dialog. Rebuilt from every
+ * new logo; «Из логотипа» rebuilds it from the current one, «Заменить» takes a separate picture.
+ */
+function AppIconSlot({ logo, iconBackground }: { logo: Parameters<typeof Img>[0]['media']; iconBackground: string }) {
+  const { tenantId, slug } = useOwner()
+  const { mediaFor } = useTenant()
+  const icon = mediaFor('icon')[0]
+  const ref = useRef<HTMLInputElement>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [done, setDone] = useState(false)
+  const logoUrl = logo?.variants.filter((v) => v.url && !v.purpose).sort((a, b) => b.w - a.w)[0]?.url ?? logo?.url
+  const make = useOwnerMutation(
+    async (source: Blob | 'logo') => {
+      let file = source
+      if (file === 'logo') {
+        const r = await fetch(logoUrl!)
+        if (!r.ok) throw new Error('logo')
+        file = await r.blob()
+      }
+      await uploadAppIcon(tenantId, file, iconBackground)
+    },
+    [tenantQueryKey(slug)],
+  )
+  const run = (source: Blob | 'logo') => {
+    setError(null)
+    setDone(false)
+    make.mutate(source, { onSuccess: () => setDone(true), onError: (err) => setError(errorMessage(err)) })
+  }
+  return (
+    <div className="grid gap-3 border-y border-line py-4">
+      <div className="flex items-center gap-3">
+        <Img media={icon} sizes="64px" className="size-16 shrink-0 rounded-[22%] border border-line" alt="" />
+        <div className="grid flex-1 gap-1">
+          <span className="font-medium">Значок приложения</span>
+          <span className="text-xs text-fg-subtle">На экране телефона после установки. Обновляется вместе с логотипом.</span>
+          {done && (
+            <span role="status" className="text-sm text-success">
+              Значок обновлён
+            </span>
+          )}
+          {error && (
+            <span role="alert" className="text-sm text-danger">
+              {error}
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {logoUrl && (
+          <Button variant="secondary" size="sm" loading={make.isPending && make.variables === 'logo'} disabled={make.isPending} onClick={() => run('logo')}>
+            <Wand2 /> Из логотипа
+          </Button>
+        )}
+        <Button variant="secondary" size="sm" loading={make.isPending && make.variables !== 'logo'} disabled={make.isPending} onClick={() => ref.current?.click()}>
+          <Camera /> Заменить
+        </Button>
+      </div>
+      <input
+        ref={ref}
+        type="file"
+        aria-label="Заменить: Значок приложения"
+        accept="image/png,image/jpeg,image/webp"
+        className="sr-only"
+        tabIndex={-1}
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) run(f)
           e.target.value = ''
         }}
       />

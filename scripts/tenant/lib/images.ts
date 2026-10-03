@@ -1,11 +1,12 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { mediaKey, resolveTheme, type Business, type PublishedImage } from '@dp/core'
+import { APP_ICON_SIZES, iconPlacement, mediaKey, planAppIcon, resolveTheme, type Business, type PublishedImage } from '@dp/core'
 import sharp from 'sharp'
 import { publicUrl, upload, type Env } from './supabase.ts'
 
 const PIPELINE_VERSION = 'img-v1'
+const ICON_PIPELINE_VERSION = 'icon-v2'
 const BUCKET = 'public-media'
 
 interface Job {
@@ -67,28 +68,32 @@ async function logoVariants(tenantId: string, src: string, source: Buffer): Prom
   return { key: mediaKey('logo', src), kind: 'logo', path: variants[1]!.path, variants, width: 256, height: 256, alt: '', caption: '', service_key: null, sort_order: 0, files }
 }
 
-/** App icons: any (192/512), maskable (512, 80% safe zone on the theme background), apple (180), favicon (48). */
-async function iconVariants(tenantId: string, src: string, source: Buffer, background: string): Promise<ProcessedImage> {
-  const hash = sha(Buffer.concat([source, Buffer.from(PIPELINE_VERSION + 'icon' + background)]))
-  const bg = background
+/**
+ * App icons (any 192/512, maskable 512, apple 180, favicon 48), laid out by `planAppIcon`: a
+ * picture with its own background stays edge to edge, a transparent logo is trimmed and centred
+ * on the theme background. The owner cabinet builds the same set on the device.
+ */
+async function iconVariants(tenantId: string, src: string, source: Buffer, themeBackground: string): Promise<ProcessedImage> {
+  const hash = sha(Buffer.concat([source, Buffer.from(ICON_PIPELINE_VERSION + themeBackground)]))
+  // Rasterise once (an SVG at print density), then plan from a small preview of it.
+  const raster = await sharp(source, { density: 300 }).ensureAlpha().png().toBuffer()
+  const { width = 1, height = 1 } = await sharp(raster).metadata()
+  const preview = await sharp(raster).resize(256, 256, { fit: 'inside' }).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+  const plan = planAppIcon({ width: preview.info.width, height: preview.info.height, data: preview.data }, themeBackground)
   const files: ProcessedImage['files'] = []
   const variants: (PublishedImage['variants'][number] & { purpose: string })[] = []
-  const add = async (name: string, size: number, purpose: string, pad: number) => {
-    const inner = Math.round(size * (1 - pad))
-    const icon = await sharp(source, { density: 300 }).resize(inner, inner, { fit: 'contain', background: bg }).png().toBuffer()
-    const data = await sharp({ create: { width: size, height: size, channels: 4, background: bg } })
-      .composite([{ input: icon, gravity: 'center' }])
+  for (const { name, size, purpose } of APP_ICON_SIZES) {
+    const at = iconPlacement(plan, width, height, purpose, size)
+    const art = await sharp(raster).extract(at.source).resize(at.width, at.height, { fit: 'fill', kernel: 'lanczos3' }).png().toBuffer()
+    const data = await sharp({ create: { width: size, height: size, channels: 4, background: plan.background } })
+      .composite([{ input: art, left: at.left, top: at.top }])
+      .flatten({ background: plan.background })
       .png()
       .toBuffer()
     const path = `${tenantId}/config/${hash}-${name}.png`
     files.push({ path, data, type: 'image/png' })
     variants.push({ w: size, path, purpose })
   }
-  await add('icon-192', 192, 'any', 0)
-  await add('icon-512', 512, 'any', 0)
-  await add('maskable-512', 512, 'maskable', 0.2)
-  await add('apple-180', 180, 'apple', 0.08)
-  await add('favicon-48', 48, 'favicon', 0)
   return { key: 'icon', kind: 'icon', path: variants[1]!.path, variants, width: 512, height: 512, alt: '', caption: '', service_key: null, sort_order: 0, files }
 }
 

@@ -23,7 +23,7 @@ export function TenantRoute() {
   const owner = isOwnerPath(params['*'] ?? '')
   // Fetch the app code in parallel with the studio data instead of after it.
   void (owner ? loadOwner() : loadClient()).catch(() => undefined)
-  const q = useTenantBootstrap(slug)
+  const q = useTenantBootstrap(slug, owner)
   if (q.isPending) return <TenantSplash />
   if (q.isError) {
     const notFound = q.error instanceof ApiError && q.error.status === 404

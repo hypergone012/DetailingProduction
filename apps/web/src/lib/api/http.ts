@@ -18,6 +18,8 @@ export interface RequestOptions {
   headers?: Record<string, string>
   signal?: AbortSignal
   timeoutMs?: number
+  /** `no-cache`: revalidate with the server instead of reusing a cached response. */
+  cache?: RequestCache
 }
 
 /** Calls an Edge Function. Errors always surface as ApiError with a stable code and a human message. */
@@ -33,7 +35,7 @@ export async function callFunction<T>(path: string, o: RequestOptions = {}): Pro
   o.signal?.addEventListener('abort', () => controller.abort())
   let res: Response
   try {
-    res = await fetch(`${env.functionsUrl}${path}`, { method: o.method ?? 'GET', headers, body, signal: controller.signal })
+    res = await fetch(`${env.functionsUrl}${path}`, { method: o.method ?? 'GET', headers, body, signal: controller.signal, ...(o.cache ? { cache: o.cache } : {}) })
   } catch {
     throw new ApiError('NETWORK', navigator.onLine ? ERROR_MESSAGES.INTERNAL! : ERROR_MESSAGES.NETWORK!, 0)
   } finally {

@@ -61,7 +61,8 @@ export function shellHead(data: Bootstrap, app: 'client' | 'owner', appUrl: stri
     `<meta name="theme-color" content="${colors.theme}" />`,
     `<meta name="color-scheme" content="${colors.scheme === 'dark' ? 'dark light' : 'light dark'}" />`,
     `<meta name="apple-mobile-web-app-title" content="${esc(app === 'client' ? name : `${name} · CRM`)}" />`,
-    `<link rel="manifest" href="${base}manifest.webmanifest" data-dp-static data-app="${app}" />`,
+    // data-icon: the page switches to the live manifest when the owner has changed the icon since.
+    `<link rel="manifest" href="${base}manifest.webmanifest" data-dp-static data-app="${app}" data-icon="${esc(icon?.path ?? '')}" />`,
     apple && `<link rel="apple-touch-icon" href="${esc(apple)}" />`,
     favicon && `<link rel="icon" href="${esc(favicon)}" />`,
   ]

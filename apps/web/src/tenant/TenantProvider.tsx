@@ -20,10 +20,11 @@ const TenantContext = createContext<TenantContextValue | null>(null)
 
 export const tenantQueryKey = (slug: string) => ['tenant', slug] as const
 
-export function useTenantBootstrap(slug: string) {
+/** `fresh` (owner cabinet): always from the server, so a logo or icon just changed shows at once. */
+export function useTenantBootstrap(slug: string, fresh = false) {
   return useQuery({
     queryKey: tenantQueryKey(slug),
-    queryFn: () => publicApi(slug).bootstrap(),
+    queryFn: () => publicApi(slug).bootstrap({ fresh }),
     staleTime: 60_000,
     gcTime: 24 * 3600_000,
     retry: (count, e) => !(e instanceof ApiError && e.status === 404) && count < 2,

@@ -15,7 +15,8 @@ export function publicApi(slug: string) {
     return token ? { 'x-booking-token': token } : keyHeader()
   }
   return {
-    bootstrap: () => callFunction<Bootstrap>(base),
+    /** `fresh`: skip cached copies (the owner cabinet, right after its own edits). */
+    bootstrap: (o: { fresh?: boolean } = {}) => callFunction<Bootstrap>(base, o.fresh ? { cache: 'no-cache' } : {}),
     availability: (q: { serviceId: string; bodyType?: string | null; addonIds?: string[]; from: string; days: number; ignoreBooking?: string }) => {
       const p = new URLSearchParams({ service_id: q.serviceId, from: q.from, days: String(q.days) })
       if (q.bodyType) p.set('body_type', q.bodyType)

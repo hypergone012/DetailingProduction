@@ -13,9 +13,9 @@ export interface PreparedImage {
   height: number
 }
 
-type Drawable = HTMLCanvasElement | ImageBitmap
+export type Drawable = HTMLCanvasElement | ImageBitmap
 
-function canvas(width: number, height: number): HTMLCanvasElement {
+export function canvas(width: number, height: number): HTMLCanvasElement {
   const c = document.createElement('canvas')
   c.width = width
   c.height = height
@@ -30,7 +30,7 @@ function draw(target: HTMLCanvasElement, source: Drawable) {
 }
 
 /** Halving steps, then the exact size: each step averages at most 2×2 pixels, as a good resampler would. */
-function resample(source: Drawable, width: number, height: number): HTMLCanvasElement {
+export function resample(source: Drawable, width: number, height: number): HTMLCanvasElement {
   let current: Drawable = source
   while (current.width / 2 >= width && current.height / 2 >= height) {
     const half = canvas(Math.round(current.width / 2), Math.round(current.height / 2))
