@@ -6,7 +6,7 @@ export default defineConfig({
       {
         test: {
           name: 'unit',
-          include: ['packages/**/*.test.ts', 'tests/unit/**/*.test.ts', 'scripts/**/*.test.ts', 'apps/web/src/**/*.test.ts', 'apps/web/vite/**/*.test.ts'],
+          include: ['packages/**/*.test.ts', 'tests/unit/**/*.test.ts', 'scripts/**/*.test.ts', 'apps/web/src/**/*.test.ts', 'apps/web/vite/**/*.test.ts', 'server/**/*.test.ts'],
           environment: 'node',
         },
       },

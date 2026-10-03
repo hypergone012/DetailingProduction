@@ -4,6 +4,5 @@
     "types": ["node"],
     "lib": ["ES2023", "DOM"]
   },
-  "include": ["./**/*.ts"],
-  "exclude": ["dev/gateway.ts"]
+  "include": ["./**/*.ts"]
 }

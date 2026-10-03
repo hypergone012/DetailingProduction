@@ -20,15 +20,20 @@ cleanupOutdatedCaches()
 
 const pages = new NetworkFirst({ cacheName: 'dp-pages', networkTimeoutSeconds: 4, plugins: [new ExpirationPlugin({ maxEntries: 40 })] })
 registerRoute(
-  new NavigationRoute(async (options) => {
-    try {
-      const res = await pages.handle(options)
-      if (res) return res
-    } catch {
-      /* offline */
-    }
-    return (await matchPrecache('/index.html')) ?? Response.error()
-  }),
+  new NavigationRoute(
+    async (options) => {
+      try {
+        const res = await pages.handle(options)
+        if (res) return res
+      } catch {
+        /* offline */
+      }
+      return (await matchPrecache('/index.html')) ?? Response.error()
+    },
+    // On a single-origin server the API shares the site's address: opening an API URL (a
+    // calendar file, an auth link) is never a page to cache or replace with the app shell.
+    { denylist: [/^\/(functions|rest|auth|storage)\/v1\//] },
+  ),
 )
 
 registerRoute(

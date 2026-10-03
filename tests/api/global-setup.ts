@@ -72,7 +72,7 @@ export default async function setup(project: TestProject) {
     const child = spawn(
       deno,
       ['run', '--allow-net', '--allow-env', '--allow-read', '--allow-write=.local', `--cert=${f('ca.pem')}`,
-        '--config', 'supabase/functions/deno.json', 'scripts/dev/gateway.ts'],
+        '--config', 'supabase/functions/deno.json', 'server/gateway.ts'],
       {
         cwd: ROOT,
         env: { ...process.env, DP_GATEWAY_PORT: String(port), SUPABASE_URL: `http://127.0.0.1:${port}`, DISPATCHER_SECRET: dispatcherSecret, TRUSTED_PROXY_HOPS: '1', ...extraEnv },

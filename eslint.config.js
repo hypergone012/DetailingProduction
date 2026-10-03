@@ -46,7 +46,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['supabase/functions/**/*.ts', 'scripts/dev/gateway.ts'],
+    files: ['supabase/functions/**/*.ts', 'server/gateway.ts'],
     languageOptions: {
       globals: { Deno: 'readonly' },
     },
