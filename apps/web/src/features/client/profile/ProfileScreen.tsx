@@ -13,7 +13,7 @@ import { device } from '@/lib/device'
 import { phonePretty } from '@/lib/format'
 import { isValidPhone } from '@/lib/phone'
 import { clearPrivateCaches } from '@/pwa/register'
-import { useAppTheme } from '@/theme/ThemeProvider'
+import { useMotionPreference } from '@/theme/ThemeProvider'
 import { useTenant } from '@/tenant/TenantProvider'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { useBookingFlow } from '../booking/flow'
@@ -28,7 +28,7 @@ import { PushCard } from './PushCard'
 
 export function ProfileScreen() {
   const { slug, api, data, locale } = useTenant()
-  const { motion, setMotion } = useAppTheme()
+  const { motion, setMotion } = useMotionPreference()
   const { profile, hasProfile } = useProfile()
   const flow = useBookingFlow()
   const qc = useQueryClient()

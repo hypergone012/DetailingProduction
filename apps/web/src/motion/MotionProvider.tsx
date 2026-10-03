@@ -1,6 +1,6 @@
 import { LazyMotion, MotionConfig, useReducedMotion } from 'motion/react'
 import type { ReactNode } from 'react'
-import { useAppTheme } from '@/theme/ThemeProvider'
+import { useMotionPreference } from '@/theme/ThemeProvider'
 import features from './features'
 
 /**
@@ -12,7 +12,7 @@ import features from './features'
  * for a second request before anything could appear made every first screen late.
  */
 export function MotionProvider({ children }: { children: ReactNode }) {
-  const { motion } = useAppTheme()
+  const { motion } = useMotionPreference()
   const os = useReducedMotion()
   const still = motion === 'reduce' || Boolean(os)
   return (

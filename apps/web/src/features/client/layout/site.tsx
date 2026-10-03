@@ -1,7 +1,7 @@
 import { MapPin, Phone } from 'lucide-react'
 import { useReducedMotion } from 'motion/react'
 import { useEffect, useState, type ReactNode } from 'react'
-import { useAppTheme } from '@/theme/ThemeProvider'
+import { useMotionPreference } from '@/theme/ThemeProvider'
 import { Card } from '@/components/Section'
 import { phonePretty } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -97,6 +97,6 @@ export function useIsDesktop(): boolean {
 /** True when motion should stay still: the OS setting or Profile → «Анимации: Меньше». */
 export function useStillMotion(): boolean {
   const os = useReducedMotion()
-  const { motion } = useAppTheme()
+  const { motion } = useMotionPreference()
   return motion === 'reduce' || Boolean(os)
 }

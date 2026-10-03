@@ -17,21 +17,34 @@ export type MotionPreference = 'system' | 'reduce'
 interface ThemeContextValue {
   appearance: Appearance
   setAppearance: (a: Appearance) => void
-  motion: MotionPreference
-  setMotion: (m: MotionPreference) => void
   tokens: ThemeTokens
   scheme: 'light' | 'dark'
 }
 
+interface MotionContextValue {
+  motion: MotionPreference
+  setMotion: (m: MotionPreference) => void
+}
+
+// Two contexts: changing the colors re-renders only what shows colors (the picker), not the
+// many components that read the motion preference — and the other way round.
 const ThemeContext = createContext<ThemeContextValue | null>(null)
+const MotionContext = createContext<MotionContextValue | null>(null)
 
 export interface Branding {
   themePreset?: string | null
   accent?: string | null
 }
 
+let settle = 0
+
 function applyTokens(tokens: ThemeTokens) {
   const root = document.documentElement
+  // The new colors land in one frame: without this, every button, switch and card with a
+  // color transition would animate on its own, a style recalculation per element per frame.
+  root.classList.add('dp-theme-switching')
+  cancelAnimationFrame(settle)
+  settle = requestAnimationFrame(() => (settle = requestAnimationFrame(() => root.classList.remove('dp-theme-switching'))))
   for (const [k, val] of Object.entries(themeToCssVars(tokens))) {
     if (k === 'color-scheme') root.style.colorScheme = val
     else root.style.setProperty(k, val)
@@ -79,12 +92,15 @@ export function ThemeProvider({ storageKey, branding, children }: { storageKey: 
     [storageKey],
   )
 
-  const value = useMemo(() => ({ appearance, setAppearance, motion, setMotion, tokens, scheme: tokens.scheme }), [appearance, setAppearance, motion, setMotion, tokens])
+  const value = useMemo(() => ({ appearance, setAppearance, tokens, scheme: tokens.scheme }), [appearance, setAppearance, tokens])
+  const motionValue = useMemo(() => ({ motion, setMotion }), [motion, setMotion])
   return (
     <ThemeContext.Provider value={value}>
-      <Theme theme={detailingTheme} mode={tokens.scheme}>
-        {children}
-      </Theme>
+      <MotionContext.Provider value={motionValue}>
+        <Theme theme={detailingTheme} mode={tokens.scheme}>
+          {children}
+        </Theme>
+      </MotionContext.Provider>
     </ThemeContext.Provider>
   )
 }
@@ -92,5 +108,12 @@ export function ThemeProvider({ storageKey, branding, children }: { storageKey: 
 export function useAppTheme(): ThemeContextValue {
   const ctx = useContext(ThemeContext)
   if (!ctx) throw new Error('useAppTheme outside ThemeProvider')
+  return ctx
+}
+
+/** Profile → «Анимации»: 'reduce' stops interface motion on this device. */
+export function useMotionPreference(): MotionContextValue {
+  const ctx = useContext(MotionContext)
+  if (!ctx) throw new Error('useMotionPreference outside ThemeProvider')
   return ctx
 }

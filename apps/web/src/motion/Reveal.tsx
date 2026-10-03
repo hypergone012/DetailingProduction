@@ -1,6 +1,6 @@
 import { animate, m, useInView, type Variants } from 'motion/react'
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
-import { useAppTheme } from '@/theme/ThemeProvider'
+import { useMotionPreference } from '@/theme/ThemeProvider'
 import { ease, move, settled } from './tokens'
 
 // Blur on large screens only: a filter animation repaints on the CPU every frame, which phones
@@ -59,7 +59,7 @@ export function RevealItem({ children, className, as = 'div', style }: { childre
 export function CountUp({ value, format = (n) => String(Math.round(n)), className, delay = 0 }: { value: number; format?: (n: number) => string; className?: string; delay?: number }) {
   const ref = useRef<HTMLSpanElement>(null)
   const inView = useInView(ref, { once: true })
-  const { motion } = useAppTheme()
+  const { motion } = useMotionPreference()
   const reduce = motion === 'reduce' || (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
   const formatRef = useRef(format)
   useLayoutEffect(() => {
