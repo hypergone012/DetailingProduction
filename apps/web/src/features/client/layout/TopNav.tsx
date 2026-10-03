@@ -36,7 +36,7 @@ export function TopNav() {
       )}
     >
       <div className="mx-auto flex h-16 max-w-5xl items-center gap-6 px-6 lg:h-[72px] lg:max-w-[1440px] lg:px-8">
-        <Link to={`/s/${slug}`} className="group flex min-w-0 items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-focus">
+        <Link to={`/s/${slug}`} className="group flex min-h-11 min-w-11 items-center gap-2.5 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-focus">
           {logo?.url && (
             <img
               src={logo.url}
@@ -56,7 +56,7 @@ export function TopNav() {
                   end={!tab.segment}
                   aria-current={i === active ? 'page' : undefined}
                   className={cn(
-                    'relative flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium outline-none transition-colors hover:text-fg focus-visible:ring-2 focus-visible:ring-focus lg:h-11 lg:px-4 lg:text-[15px]',
+                    'relative flex h-11 items-center gap-2 rounded-lg px-3 text-sm font-medium outline-none transition-colors hover:text-fg focus-visible:ring-2 focus-visible:ring-focus lg:h-11 lg:px-4 lg:text-[15px]',
                     i === active ? 'text-accent-text' : 'text-fg-muted',
                   )}
                 >

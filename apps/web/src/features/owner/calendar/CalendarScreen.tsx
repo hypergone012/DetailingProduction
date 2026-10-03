@@ -81,7 +81,7 @@ export function CalendarScreen() {
               Сегодня
             </Button>
           )}
-          <DateInput aria-label="Выбрать дату" className="h-9 w-[150px] text-sm" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
+          <DateInput aria-label="Выбрать дату" className="h-9 w-[150px] text-sm pointer-coarse:h-11" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
         </div>
         <p className="text-sm text-fg-muted" aria-live="polite">
           {cal.isPending ? 'Загрузка…' : cal.isError ? errorMessage(cal.error) : bookings ? `Записей: ${bookings}` : 'Записей нет'}

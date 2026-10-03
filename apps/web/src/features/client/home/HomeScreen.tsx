@@ -259,7 +259,7 @@ function BookNowCard({ className }: { className?: string }) {
               type="button"
               onClick={() => flow.start({ serviceId: s.id, ...(vehicle ? { vehicle: { kind: 'saved' as const, id: vehicle.id, body_type: vehicle.body_type, label: vehicle.nickname || `${vehicle.make} ${vehicle.model}` } } : {}) })}
               className={cn(
-                'pressable shrink-0 snap-start rounded-full border border-line bg-bg-elevated px-3.5 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-focus lg:px-4 lg:py-2.5 lg:text-[15px] lg:transition-[border-color,background-color,transform] lg:duration-300 lg:hover:-translate-y-0.5 lg:hover:border-accent-text/50 lg:hover:bg-accent-subtle',
+                'pressable min-h-11 shrink-0 snap-start rounded-full border border-line bg-bg-elevated px-3.5 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-focus lg:px-4 lg:py-2.5 lg:text-[15px] lg:transition-[border-color,background-color,transform] lg:duration-300 lg:hover:-translate-y-0.5 lg:hover:border-accent-text/50 lg:hover:bg-accent-subtle',
                 i >= 5 && 'hidden lg:inline-block',
                 i >= HOME_SERVICES && 'lg:hidden',
               )}
@@ -380,13 +380,13 @@ function StudioToday() {
         {status.text}
       </p>
       {p.address && (
-        <a href={p.map_url ?? undefined} target="_blank" rel="noreferrer" className="flex items-start gap-2.5 text-[15px] text-fg-muted hover:text-fg">
-          <MapPin className="mt-0.5 size-5 shrink-0" aria-hidden />
+        <a href={p.map_url ?? undefined} target="_blank" rel="noreferrer" className="flex min-h-11 items-center gap-2.5 text-[15px] text-fg-muted hover:text-fg">
+          <MapPin className="size-5 shrink-0" aria-hidden />
           {p.address}
         </a>
       )}
       {p.phone && (
-        <a href={`tel:${p.phone}`} className="mt-auto flex items-center gap-2.5 text-lg font-semibold text-accent-text">
+        <a href={`tel:${p.phone}`} className="mt-auto flex min-h-11 items-center gap-2.5 text-lg font-semibold text-accent-text">
           <Phone className="size-5" aria-hidden /> {phonePretty(p.phone)}
         </a>
       )}
@@ -406,7 +406,7 @@ function PopularServices() {
       title="Услуги"
       subtitle={`${data.services.length} ${servicesWord(data.services.length)} · цена сразу для вашего кузова`}
       action={
-        <Link className="flex items-center gap-1.5 text-sm text-accent-text lg:text-[17px] lg:font-medium" to={`/s/${slug}/services`}>
+        <Link className="-my-3 flex items-center gap-1.5 py-3 text-sm text-accent-text lg:text-[17px] lg:font-medium" to={`/s/${slug}/services`}>
           Все услуги <ArrowRight className="hidden size-5 lg:block" aria-hidden />
         </Link>
       }
@@ -576,22 +576,22 @@ function About() {
             {e.text}
           </p>
         ))}
-        <div className="grid gap-2 border-t border-line pt-3 text-sm">
+        <div className="grid border-t border-line pt-2 text-sm">
           {p.address && (
-            <a href={p.map_url ?? undefined} target="_blank" rel="noreferrer" className="flex items-start gap-2 text-fg-muted">
-              <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <a href={p.map_url ?? undefined} target="_blank" rel="noreferrer" className="flex min-h-11 items-center gap-2 text-fg-muted">
+              <MapPin className="size-4 shrink-0" aria-hidden />
               {p.address}
             </a>
           )}
           {p.phone && (
-            <a href={`tel:${p.phone}`} className="flex items-center gap-2 font-medium text-accent-text">
+            <a href={`tel:${p.phone}`} className="flex min-h-11 items-center gap-2 font-medium text-accent-text">
               <Phone className="size-4" aria-hidden /> {phonePretty(p.phone)}
             </a>
           )}
           {p.socials.length > 0 && (
             <div className="flex flex-wrap gap-2 pt-1">
               {p.socials.map((s) => (
-                <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="rounded-full border border-line px-3 py-1.5 text-sm">
+                <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-full border border-line px-4 text-sm">
                   {s.label ?? s.kind}
                 </a>
               ))}
@@ -609,7 +609,7 @@ function About() {
           {p.socials.length > 0 && (
             <div className="flex flex-wrap gap-2 pt-1">
               {p.socials.map((s) => (
-                <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="rounded-full border border-line px-4 py-2 text-[15px] hover:bg-surface-2">
+                <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-full border border-line px-4 text-[15px] hover:bg-surface-2">
                   {s.label ?? s.kind}
                 </a>
               ))}
@@ -640,12 +640,12 @@ function About() {
           <p className="text-sm font-semibold uppercase tracking-[0.08em] text-fg-subtle">Как нас найти</p>
           {p.address && <p className="text-[19px] leading-snug">{p.address}</p>}
           {p.phone && (
-            <a href={`tel:${p.phone}`} className="text-[28px] leading-none font-bold tracking-tight text-accent-text tabular">
+            <a href={`tel:${p.phone}`} className="-my-2 py-2 text-[28px] leading-none font-bold tracking-tight text-accent-text tabular">
               {phonePretty(p.phone)}
             </a>
           )}
           {p.email && (
-            <a href={`mailto:${p.email}`} className="text-[15px] text-fg-muted hover:text-fg">
+            <a href={`mailto:${p.email}`} className="-my-3 py-3 text-[15px] text-fg-muted hover:text-fg">
               {p.email}
             </a>
           )}

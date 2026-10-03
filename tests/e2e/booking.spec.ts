@@ -71,3 +71,53 @@ test('a client books online and the owner sees the booking in the cabinet', asyn
   await expect(owner.getByRole('button', { name: new RegExp(`${customer}, ${studio.serviceName}`) })).toBeVisible()
   await ownerContext.close()
 })
+
+test('a lost answer and repeated taps on a slow network still make exactly one booking', async ({ page }) => {
+  const customer = `Е2Е Повтор ${Math.floor(Math.random() * 1e6)}`
+  const phone = `9${String(Math.floor(Math.random() * 1e9)).padStart(9, '0')}`
+
+  await page.goto(`/s/${studio.slug}/`)
+  await page.getByRole('button', { name: 'Выбрать услугу и время' }).click()
+  const sheet = page.getByRole('dialog')
+  await sheet.getByRole('button').filter({ hasText: studio.serviceName }).click()
+  await sheet.getByLabel('Марка').fill('Kia')
+  await sheet.getByLabel('Модель').fill('Rio')
+  await sheet.getByRole('radio', { name: /Седан/ }).click()
+  await sheet.getByRole('button', { name: 'Продолжить' }).click()
+  const times = sheet.locator('[role=radiogroup][aria-label="Время"] [role=radio]')
+  await expect(times.first()).toBeVisible()
+  await times.last().click()
+  await sheet.getByRole('button', { name: 'Продолжить' }).click()
+  await sheet.getByLabel('Имя').fill(customer)
+  await sheet.getByLabel('Телефон').fill(phone)
+
+  // 1st attempt: the server creates the booking, the answer never reaches the phone.
+  // Later attempts: a slow network (1.5 s), tapped three times in a row.
+  let posts = 0
+  const keys = new Set<string>()
+  await page.route(/\/functions\/v1\/public-api\/t\/[^/]+\/bookings$/, async (route) => {
+    if (route.request().method() !== 'POST') return route.continue()
+    posts++
+    keys.add(route.request().headers()['idempotency-key'] ?? '')
+    const res = await route.fetch()
+    if (posts === 1) return route.abort('connectionreset')
+    await new Promise((r) => setTimeout(r, 1500))
+    return route.fulfill({ response: res })
+  })
+  const submit = sheet.locator('button[type=submit]')
+  await submit.click()
+  await expect(sheet.getByRole('alert').or(sheet.getByText(/Не удалось|нет связи|сети/i)).first()).toBeVisible()
+  await submit.click()
+  await submit.click({ force: true }).catch(() => undefined)
+  await submit.click({ force: true }).catch(() => undefined)
+  await expect(sheet.getByText('Вы записаны')).toBeVisible()
+
+  // One key for the whole action; the retry got the same booking back, never a second one.
+  expect(keys.size).toBe(1)
+  expect(posts).toBe(2)
+  const { serviceRoleKey } = e2eKeys()
+  const rows = (await fetch(`${GATEWAY}/rest/v1/bookings?select=id,customers!inner(name)&tenant_id=eq.${studio.id}&customers.name=eq.${encodeURIComponent(customer)}`, {
+    headers: { apikey: serviceRoleKey, authorization: `Bearer ${serviceRoleKey}` },
+  }).then((r) => r.json())) as unknown[]
+  expect(rows).toHaveLength(1)
+})

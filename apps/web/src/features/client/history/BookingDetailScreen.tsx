@@ -175,7 +175,7 @@ export function BookingDetailScreen() {
               </a>
             )}
             {studio.phone && (
-              <a href={`tel:${studio.phone}`} className="flex items-center gap-2 font-medium text-accent-text">
+              <a href={`tel:${studio.phone}`} className="flex min-h-11 items-center gap-2 font-medium text-accent-text">
                 <Phone className="size-4" aria-hidden /> {phonePretty(studio.phone)}
               </a>
             )}

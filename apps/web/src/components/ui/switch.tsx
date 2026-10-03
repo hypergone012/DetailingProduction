@@ -7,7 +7,9 @@ export function Switch({ className, ...props }: ComponentProps<typeof SwitchPrim
     <SwitchPrimitive.Root
       data-slot="switch"
       className={cn(
-        'peer inline-flex h-7 w-12 shrink-0 items-center rounded-full border border-line-strong bg-sunken p-0.5 outline-none transition-colors',
+        'peer relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border border-line-strong bg-sunken p-0.5 outline-none transition-colors',
+        // A 44px tap area around the 28px track.
+        "after:absolute after:-inset-x-1 after:-inset-y-2.5 after:content-['']",
         'data-[state=checked]:border-transparent data-[state=checked]:bg-accent focus-visible:ring-2 focus-visible:ring-focus disabled:opacity-50',
         className,
       )}

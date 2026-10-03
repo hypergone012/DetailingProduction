@@ -74,7 +74,7 @@ export function StudioContactCard({ className }: { className?: string }) {
         </a>
       )}
       {p.phone && (
-        <a href={`tel:${p.phone}`} className="flex items-center gap-3 text-lg font-semibold text-accent-text">
+        <a href={`tel:${p.phone}`} className="flex min-h-11 items-center gap-3 text-lg font-semibold text-accent-text">
           <Phone className="size-5" aria-hidden /> {phonePretty(p.phone)}
         </a>
       )}

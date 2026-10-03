@@ -80,10 +80,10 @@ export function LoginScreen() {
         </Button>
       </form>
       <div className="flex items-center justify-between gap-2 text-sm">
-        <button type="button" className="text-accent-text underline-offset-4 hover:underline" onClick={() => (setMode('forgot'), setError(null))}>
+        <button type="button" className="min-h-11 text-accent-text underline-offset-4 hover:underline" onClick={() => (setMode('forgot'), setError(null))}>
           Забыли пароль?
         </button>
-        <Link to={`/s/${slug}`} className="text-fg-muted underline-offset-4 hover:underline">
+        <Link to={`/s/${slug}`} className="flex min-h-11 items-center text-fg-muted underline-offset-4 hover:underline">
           Страница записи
         </Link>
       </div>

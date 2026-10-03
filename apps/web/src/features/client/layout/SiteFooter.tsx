@@ -27,7 +27,7 @@ export function SiteFooter() {
     <footer className="relative z-[1] mt-20 hidden border-t border-line bg-bg-elevated lg:block">
       <Reveal className="mx-auto grid max-w-[1440px] grid-cols-12 gap-10 px-8 py-14">
         <div className="col-span-4 grid content-start gap-4">
-          <Link to={`/s/${slug}`} className="flex items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-focus">
+          <Link to={`/s/${slug}`} className="flex min-h-11 items-center gap-3 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-focus">
             {logo?.url && <img src={logo.url} alt="" className="size-12 rounded-xl border border-line bg-surface object-contain p-1.5" />}
             <span className="text-2xl font-bold tracking-tight">{data.tenant.name}</span>
           </Link>
@@ -37,35 +37,35 @@ export function SiteFooter() {
             {status.text}
           </p>
         </div>
-        <nav aria-label="Разделы сайта" className="col-span-2 grid content-start gap-3">
-          <p className="text-sm font-semibold uppercase tracking-[0.08em] text-fg-subtle">Разделы</p>
+        <nav aria-label="Разделы сайта" className="col-span-2 grid content-start gap-0.5">
+          <p className="pb-2 text-sm font-semibold uppercase tracking-[0.08em] text-fg-subtle">Разделы</p>
           {TABS.map((t) => (
-            <Link key={t.key} to={t.segment ? `/s/${slug}/${t.segment}` : `/s/${slug}`} className="w-fit text-[15px] text-fg-muted hover:text-fg">
+            <Link key={t.key} to={t.segment ? `/s/${slug}/${t.segment}` : `/s/${slug}`} className="flex min-h-11 w-fit items-center text-[15px] text-fg-muted hover:text-fg">
               {t.key === 'book' ? 'Услуги и запись' : t.label}
             </Link>
           ))}
         </nav>
-        <div className="col-span-3 grid content-start gap-3">
-          <p className="text-sm font-semibold uppercase tracking-[0.08em] text-fg-subtle">Контакты</p>
+        <div className="col-span-3 grid content-start gap-1">
+          <p className="pb-2 text-sm font-semibold uppercase tracking-[0.08em] text-fg-subtle">Контакты</p>
           {p.phone && (
-            <a href={`tel:${p.phone}`} className="flex items-center gap-2.5 text-lg font-semibold text-accent-text">
+            <a href={`tel:${p.phone}`} className="flex min-h-11 items-center gap-2.5 text-lg font-semibold text-accent-text">
               <Phone className="size-5" aria-hidden /> {phonePretty(p.phone)}
             </a>
           )}
           {p.address && (
-            <a href={p.map_url ?? undefined} target="_blank" rel="noreferrer" className="flex items-start gap-2.5 text-[15px] text-fg-muted hover:text-fg">
-              <MapPin className="mt-0.5 size-5 shrink-0" aria-hidden /> {p.address}
+            <a href={p.map_url ?? undefined} target="_blank" rel="noreferrer" className="flex min-h-11 items-center gap-2.5 text-[15px] text-fg-muted hover:text-fg">
+              <MapPin className="size-5 shrink-0" aria-hidden /> {p.address}
             </a>
           )}
           {p.email && (
-            <a href={`mailto:${p.email}`} className="flex items-center gap-2.5 text-[15px] text-fg-muted hover:text-fg">
+            <a href={`mailto:${p.email}`} className="flex min-h-11 items-center gap-2.5 text-[15px] text-fg-muted hover:text-fg">
               <Mail className="size-5" aria-hidden /> {p.email}
             </a>
           )}
           {p.socials.length > 0 && (
             <div className="flex flex-wrap gap-2 pt-1">
               {p.socials.map((s) => (
-                <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="rounded-full border border-line px-3.5 py-1.5 text-sm hover:bg-surface-2">
+                <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-full border border-line px-4 text-sm hover:bg-surface-2">
                   {s.label ?? s.kind}
                 </a>
               ))}

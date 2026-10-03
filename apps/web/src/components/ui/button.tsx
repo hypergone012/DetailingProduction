@@ -18,11 +18,11 @@ const buttonVariants = cva(
         link: 'h-auto px-0 text-accent-text underline-offset-4 hover:underline',
       },
       size: {
-        sm: 'h-9 rounded-md px-3 text-sm [&_svg]:size-4',
+        sm: 'h-9 rounded-md px-3 text-sm pointer-coarse:h-11 [&_svg]:size-4',
         md: 'h-11 rounded-lg px-4 text-[15px] [&_svg]:size-[18px]',
         lg: 'h-13 rounded-xl px-5 text-base [&_svg]:size-5',
         icon: 'size-11 rounded-full [&_svg]:size-5',
-        'icon-sm': 'size-9 rounded-full [&_svg]:size-4',
+        'icon-sm': 'size-9 rounded-full pointer-coarse:size-11 [&_svg]:size-4',
       },
       block: { true: 'w-full' },
     },

@@ -460,3 +460,13 @@ html[data-motion='reduce'] .dp-aurora,
 html[data-motion='reduce'] .text-on-photo,
 html[data-motion='reduce'] .hero-parallax-photo,
 html[data-motion='reduce'] .hero-parallax-text { animation: none !important; }
+
+/* Profile «Анимации»: each option's tap area covers the control's whole 44px height. */
+.dp-seg-tap [role='radio'] {
+  position: relative;
+}
+.dp-seg-tap [role='radio']::after {
+  content: '';
+  position: absolute;
+  inset: -2px 0;
+}

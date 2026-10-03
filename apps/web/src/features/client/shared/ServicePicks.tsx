@@ -28,7 +28,7 @@ export function ServicePicks({ title, vehicleId, cols = 3 }: { title?: string; v
       title={title ?? (car ? `Услуги для ${car}` : 'Услуги студии')}
       subtitle={car ? 'Цены уже рассчитаны для вашего кузова.' : 'Добавьте автомобиль — цены посчитаются для вашего кузова.'}
       action={
-        <Link to={`/s/${slug}/services`} className="text-[15px] font-medium text-accent-text">
+        <Link to={`/s/${slug}/services`} className="-my-3 py-3 text-[15px] font-medium text-accent-text">
           Все услуги
         </Link>
       }
@@ -45,7 +45,7 @@ export function ServicePicks({ title, vehicleId, cols = 3 }: { title?: string; v
                 <Img media={mediaFor('service', s.id)[0]} sizes="320px" className="aspect-[16/10] w-full transition-transform duration-700 group-hover:scale-[1.07]" alt="" />
               </Link>
               <div className="flex flex-1 flex-col gap-3 p-5">
-                <Link to={href} className="rounded text-lg leading-snug font-semibold outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus">
+                <Link to={href} className="-my-2.5 rounded py-2.5 text-lg leading-snug font-semibold outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus">
                   {s.name}
                 </Link>
                 <span className="flex items-center gap-1.5 text-sm text-fg-subtle">
@@ -57,7 +57,6 @@ export function ServicePicks({ title, vehicleId, cols = 3 }: { title?: string; v
                     {mine ? money(mine.price_cents, currency, locale) : `${hasPriceRange(s) ? 'от ' : ''}${money(minPrice(s), currency, locale)}`}
                   </span>
                   <Button
-                    size="sm"
                     onClick={() =>
                       flow.start({ serviceId: s.id, ...(v ? { vehicle: { kind: 'saved' as const, id: v.id, body_type: v.body_type, label: car! } } : {}) })
                     }

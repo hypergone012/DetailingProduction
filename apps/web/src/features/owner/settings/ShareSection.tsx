@@ -90,7 +90,7 @@ export function ShareSection() {
           <p className="font-medium">Как установить как приложение</p>
           <p className="text-sm text-fg-muted">
             Подходит и клиентам (ссылка выше), и вам: кабинет ставится отдельным приложением по адресу{' '}
-            <button type="button" className="break-all text-accent-text underline-offset-4 hover:underline" onClick={() => void copy(ownerUrl)}>
+            <button type="button" className="min-h-11 break-all text-left text-accent-text underline-offset-4 hover:underline" onClick={() => void copy(ownerUrl)}>
               {ownerUrl}
             </button>
             .

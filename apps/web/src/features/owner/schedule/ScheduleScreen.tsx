@@ -78,9 +78,9 @@ function WeeklyHoursEditor({ saved }: { saved: Window[][] }) {
               <div className="grid gap-2">
                 {ws.map((w, j) => (
                   <div key={j} className="flex items-center gap-2">
-                    <TimeInput disabled={!isOwner} aria-label="Открытие" className="h-10" value={w.opens} onChange={(e) => set(day, ws.map((x, k) => (k === j ? { ...x, opens: e.target.value } : x)))} />
+                    <TimeInput disabled={!isOwner} aria-label="Открытие" className="h-10 pointer-coarse:h-11" value={w.opens} onChange={(e) => set(day, ws.map((x, k) => (k === j ? { ...x, opens: e.target.value } : x)))} />
                     <span className="text-fg-subtle">–</span>
-                    <TimeInput disabled={!isOwner} aria-label="Закрытие" className="h-10" value={w.closes} onChange={(e) => set(day, ws.map((x, k) => (k === j ? { ...x, closes: e.target.value } : x)))} />
+                    <TimeInput disabled={!isOwner} aria-label="Закрытие" className="h-10 pointer-coarse:h-11" value={w.closes} onChange={(e) => set(day, ws.map((x, k) => (k === j ? { ...x, closes: e.target.value } : x)))} />
                     {isOwner && ws.length > 1 && (
                       <Button variant="ghost" size="icon-sm" aria-label="Удалить интервал" onClick={() => set(day, ws.filter((_, k) => k !== j))}>
                         <Trash2 />

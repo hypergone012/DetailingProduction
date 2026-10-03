@@ -49,9 +49,10 @@ export function CustomersScreen() {
               <li key={c.id}>
                 <Link to={`/s/${slug}/owner/customers/${c.id}`} className="flex items-center gap-3 px-4 py-3 outline-none hover:bg-surface-2 focus-visible:bg-surface-2">
                   <span className="grid min-w-0 flex-1 gap-0.5">
-                    <span className="flex items-center gap-2 truncate font-medium">
-                      {c.name}
-                      {c.is_demo && <Badge tone="warning">демо</Badge>}
+                    <span className="flex min-w-0 items-center gap-2 font-medium">
+                      {/* A long name is shortened, the badge always stays whole. */}
+                      <span className="truncate">{c.name}</span>
+                      {c.is_demo && <Badge tone="warning" className="shrink-0">демо</Badge>}
                     </span>
                     <span className="truncate text-sm text-fg-muted">
                       {phonePretty(c.phone_e164) || 'без телефона'} · {c.completed_count} {plural(c.completed_count, 'визит', 'визита', 'визитов')}

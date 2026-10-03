@@ -71,15 +71,15 @@ export function ProfileScreen() {
         )}
 
         <SiteSection title="Студия" className="order-4 lg:order-none">
-          <Card className="grid gap-3 p-4 text-sm lg:gap-4 lg:rounded-3xl lg:p-6 lg:text-[15px]">
-            <p className="text-base font-semibold lg:text-lg">{data.tenant.name}</p>
+          <Card className="grid gap-1 p-4 text-sm lg:gap-2 lg:rounded-3xl lg:p-6 lg:text-[15px]">
+            <p className="pb-1 text-base font-semibold lg:text-lg">{data.tenant.name}</p>
             {data.profile.address && (
-              <a className="flex items-start gap-2 text-fg-muted" href={data.profile.map_url ?? undefined} target="_blank" rel="noreferrer">
-                <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden /> {data.profile.address}
+              <a className="flex min-h-11 items-center gap-2 text-fg-muted" href={data.profile.map_url ?? undefined} target="_blank" rel="noreferrer">
+                <MapPin className="size-4 shrink-0" aria-hidden /> {data.profile.address}
               </a>
             )}
             {data.profile.phone && (
-              <a className="flex items-center gap-2 text-accent-text" href={`tel:${data.profile.phone}`}>
+              <a className="flex min-h-11 items-center gap-2 text-accent-text" href={`tel:${data.profile.phone}`}>
                 <Phone className="size-4" aria-hidden /> {phonePretty(data.profile.phone)}
               </a>
             )}
@@ -102,15 +102,17 @@ export function ProfileScreen() {
         <SiteSection title="Оформление" className="order-2 lg:order-none">
           <Card className="grid gap-4 p-4 lg:rounded-3xl lg:p-6">
             <AppearancePicker />
-            <div className="flex items-center justify-between gap-3 border-t border-line pt-4">
+            <div className="grid gap-3 border-t border-line pt-4 sm:flex sm:items-center sm:justify-between">
               <div className="grid text-sm">
                 <span className="font-medium">Анимации</span>
                 <span className="text-fg-muted">«Меньше» отключает движение интерфейса</span>
               </div>
-              <SegmentedControl label="Анимации" value={motion} onChange={(v) => setMotion(v as 'system' | 'reduce')} size="sm">
-                <SegmentedControlItem value="system" label="Как в системе" />
-                <SegmentedControlItem value="reduce" label="Меньше" />
-              </SegmentedControl>
+              <div className="sm:w-72 sm:shrink-0">
+                <SegmentedControl className="dp-seg-tap" label="Анимации" value={motion} onChange={(v) => setMotion(v as 'system' | 'reduce')} size="lg" layout="fill">
+                  <SegmentedControlItem value="system" label="Как в системе" />
+                  <SegmentedControlItem value="reduce" label="Меньше" />
+                </SegmentedControl>
+              </div>
             </div>
           </Card>
         </SiteSection>

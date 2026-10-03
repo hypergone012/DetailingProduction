@@ -44,7 +44,7 @@ export function ServicesScreen() {
                 aria-pressed={cat === c}
                 onClick={() => setCat(c)}
                 className={cn(
-                  'pressable relative h-9 shrink-0 rounded-full border px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-focus lg:h-12 lg:px-6 lg:text-base lg:font-medium lg:transition-colors',
+                  'pressable relative h-11 shrink-0 rounded-full border px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-focus lg:h-12 lg:px-6 lg:text-base lg:font-medium lg:transition-colors',
                   cat === c ? 'border-transparent text-accent-fg' : 'border-line bg-surface text-fg-muted lg:hover:text-fg',
                 )}
               >
@@ -120,7 +120,7 @@ function ServiceCard({ service: s }: { service: ServiceView }) {
         <div className="grid gap-1.5">
           <span className="text-xs font-semibold uppercase tracking-[0.1em] text-accent-text">{CATEGORY_LABELS[s.category] ?? s.category}</span>
           <h2 className="text-[24px] leading-tight font-bold tracking-tight">
-            <Link to={href} className="rounded outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus">
+            <Link to={href} className="-my-2 inline-block rounded py-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-focus">
               {s.name}
             </Link>
           </h2>

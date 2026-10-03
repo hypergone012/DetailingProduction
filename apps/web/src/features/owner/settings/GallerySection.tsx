@@ -95,7 +95,7 @@ function GalleryItem({ m }: { m: MediaRow }) {
         value={caption}
         maxLength={200}
         placeholder="Подпись"
-        className="h-9 text-sm"
+        className="h-9 text-sm pointer-coarse:h-11"
         onChange={(e) => setCaption(e.target.value)}
         onBlur={() => caption !== m.caption && update.mutate({ caption })}
       />
