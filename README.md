@@ -8,7 +8,8 @@
 
 | Документ | Для чего |
 |---|---|
-| [DEPLOY-IN-BROWSER.md](DEPLOY-IN-BROWSER.md) | **Запустить сайт без программ:** аккаунты Supabase и Cloudflare, ключи в GitHub, кнопка «Run workflow». Как поставить приложение на телефон и ПК, QR-код для клиентов |
+| [DEPLOY-RU.md](DEPLOY-RU.md) | **Сайт для клиентов в России:** свой сервер в РФ и домен, кнопка «Deploy server (Russia)», перенос данных из Supabase, резервные копии. Адреса `*.pages.dev` и `*.supabase.co` из России не открываются (проверено зондами) |
+| [DEPLOY-IN-BROWSER.md](DEPLOY-IN-BROWSER.md) | **Запустить сайт без программ (Supabase + Cloudflare):** аккаунты Supabase и Cloudflare, ключи в GitHub, кнопка «Run workflow». Как поставить приложение на телефон и ПК, QR-код для клиентов |
 | [CLONE-IN-6-MINUTES.md](CLONE-IN-6-MINUTES.md) | Добавить новую студию: конфиг и фото, без программирования |
 | [SETUP.md](SETUP.md) | Для разработчика: локальный запуск, переменные, ручная выкладка, чек-лист production |
 | [ACCEPTANCE.md](ACCEPTANCE.md) | Что проверено и чем, что не проверено и почему |
