@@ -171,12 +171,12 @@ async function globalping() {
         type: 'http',
         target: u.host,
         locations: [{ country: 'RU', limit: 4 }],
-        measurementOptions: { protocol: 'HTTPS', request: { method: 'GET', path: u.pathname, query: u.search.replace(/^\?/, '') } },
+        measurementOptions: { protocol: 'HTTPS', request: { method: 'GET', path: u.pathname, ...(u.search ? { query: u.search.slice(1) } : {}) } },
       }),
     })
     const id = create.ok && create.status < 300 ? JSON.parse(new TextDecoder().decode(create.body)).id : null
     if (!id) {
-      log(`| ${what} | — | could not start (${create.ok ? create.status + ' ' + new TextDecoder().decode(create.body).slice(0, 120) : create.error}) | | | | |`)
+      log(`| ${what} | — | could not start (${create.ok ? create.status + ' ' + new TextDecoder().decode(create.body).replace(/\s+/g, ' ').slice(0, 400) : create.error}) | | | | |`)
       continue
     }
     let result = null
@@ -221,16 +221,25 @@ async function checkHost() {
     const q = new URLSearchParams({ host: url })
     for (const [n] of ru) q.append('node', n)
     const start = await timed(`https://check-host.net/check-http?${q}`, { headers: { accept: 'application/json' } })
-    const id = start.ok ? JSON.parse(new TextDecoder().decode(start.body)).request_id : null
+    let id = null
+    try {
+      id = JSON.parse(new TextDecoder().decode(start.body)).request_id
+    } catch {
+      /* not JSON */
+    }
     if (!id) {
-      log(`| ${what} | — | could not start | |`)
+      log(`| ${what} | — | could not start (${start.ok ? `${start.status} ${new TextDecoder().decode(start.body).replace(/\s+/g, ' ').slice(0, 200)}` : start.error}) | |`)
       continue
     }
     let res = null
     for (let i = 0; i < 20; i++) {
       await new Promise((r) => setTimeout(r, 2000))
       const r = await timed(`https://check-host.net/check-result/${id}`, { headers: { accept: 'application/json' } })
-      res = r.ok ? JSON.parse(new TextDecoder().decode(r.body)) : null
+      try {
+        res = r.ok ? JSON.parse(new TextDecoder().decode(r.body)) : null
+      } catch {
+        res = null
+      }
       if (res && Object.values(res).every((v) => v !== null)) break
     }
     for (const [n] of ru) {
