@@ -1,0 +1,35 @@
+[Unit]
+Description=DP file storage (Supabase Storage API, files in /var/lib/dp/storage) on 127.0.0.1:54326
+After=network-online.target postgresql.service
+Wants=network-online.target postgresql.service
+
+[Service]
+User=dp
+Group=dp
+EnvironmentFile=/etc/dp/storage.env
+WorkingDirectory=/opt/dp/platform/current/storage
+ExecStart=/opt/dp/platform/current/node/bin/node dist/start/server.js
+Restart=always
+RestartSec=2
+ReadWritePaths=/var/lib/dp/storage
+CapabilityBoundingSet=
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

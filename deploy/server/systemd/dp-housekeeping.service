@@ -1,0 +1,8 @@
+[Unit]
+Description=DP housekeeping: expired tokens, rate-limit windows, old logs (daily)
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=postgres
+ExecStart=/usr/bin/psql -X -q -d dp -v ON_ERROR_STOP=1 -c "select public.api_housekeeping()"

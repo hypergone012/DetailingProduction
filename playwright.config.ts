@@ -21,6 +21,8 @@ export default defineConfig({
   globalSetup: './tests/e2e/global-setup.ts',
   use: {
     baseURL: BASE_URL ?? `http://127.0.0.1:${PORT}`,
+    // A test server with a self-signed certificate (the server installer test).
+    ignoreHTTPSErrors: process.env.E2E_IGNORE_HTTPS_ERRORS === '1',
     locale: 'ru-RU',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

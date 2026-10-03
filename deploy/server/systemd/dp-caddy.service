@@ -1,0 +1,37 @@
+[Unit]
+Description=DP web server (Caddy): HTTPS on 80/443, certificates, compression -> gateway
+After=network-online.target dp-gateway.service
+Wants=network-online.target
+
+[Service]
+User=dpcaddy
+Group=dpcaddy
+Environment=XDG_DATA_HOME=/var/lib/dp/caddy
+Environment=XDG_CONFIG_HOME=/var/lib/dp/caddy
+ExecStart=/opt/dp/platform/current/bin/caddy run --config /etc/dp/Caddyfile --adapter caddyfile
+Restart=always
+RestartSec=2
+LimitNOFILE=1048576
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+ReadWritePaths=/var/lib/dp/caddy
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

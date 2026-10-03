@@ -33,6 +33,8 @@ describe('resolveWebPath', () => {
     expect(resolveWebPath('/../etc/passwd', isFile)).toEqual({ notFound: true })
     expect(resolveWebPath('/assets/%2e%2e/%2e%2e/secret', isFile)).toEqual({ notFound: true })
     expect(resolveWebPath('/.env', isFile)).toEqual({ notFound: true })
+    expect(resolveWebPath('/_headers', (p) => p === '/_headers')).toEqual({ notFound: true })
+    expect(resolveWebPath('/_redirects', (p) => p === '/_redirects')).toEqual({ notFound: true })
     expect(resolveWebPath('/%E0%A4%A', isFile)).toEqual({ notFound: true })
     expect(resolveWebPath('/a\0b', isFile)).toEqual({ notFound: true })
   })

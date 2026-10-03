@@ -63,6 +63,8 @@ export function resolveWebPath(pathname: string, isFile: (p: string) => boolean)
   }
   // No way out of the web root, no hidden files.
   if (!path.startsWith('/') || path.includes('\0') || path.split('/').some((seg) => seg === '..' || seg.startsWith('.'))) return { notFound: true }
+  // The host's own rule files are configuration, not content.
+  if (path === '/_headers' || path === '/_redirects') return { notFound: true }
   if (isFile(path)) return { file: path }
   const dirIndex = path.replace(/\/?$/, '/') + 'index.html'
   if (isFile(dirIndex)) return { file: dirIndex }

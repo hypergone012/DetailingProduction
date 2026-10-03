@@ -17,10 +17,9 @@ AUTH_PORT="${DP_AUTH_PORT:-54324}"
 REST_PORT="${DP_REST_PORT:-54325}"
 STORAGE_PORT="${DP_STORAGE_PORT:-54326}"
 DB="${DP_DB:-dp_dev}"
-AUTH_COMMIT="ce9a8eee0cc042be8c7a42981a7ddae631e41d91"      # supabase/auth, 2026-09-22
-STORAGE_COMMIT="76b70ba80e7c171d6b534db3c65430467a82f4bd"   # supabase/storage, 2026-10-01
-POSTGREST_VERSION="v13.0.8"
-NODE24_VERSION="24.21.0"                                     # storage-api requires node >= 24
+# AUTH_COMMIT, STORAGE_COMMIT, POSTGREST_VERSION, NODE24_VERSION: shared with the server build.
+# shellcheck source=../../deploy/server/versions.env
+. "$ROOT/deploy/server/versions.env"
 NODE24="$LOCAL/node24/package/bin"
 AUTH_SRC="$LOCAL/src/auth"
 STORAGE_SRC="$LOCAL/src/storage"

@@ -144,13 +144,31 @@ async function proxy(req: Request, prefix: string, upstream: string): Promise<Re
 // ---------------------------------------------------------------------------------------
 // The web app (server): static files with the studio shells and the build's _headers.
 const WEB_ROOT = env('DP_WEB_ROOT')?.replace(/\/$/, '')
+// The server publishes a new build by switching the DP_WEB_ROOT symlink
+// (deploy/server/bin/activate-web.sh): its _headers are picked up without a restart.
 let headerRules: HeaderRule[] = []
-if (WEB_ROOT) {
+let headersOf = ''
+let headersCheckedAt = 0
+
+function currentHeaderRules(): HeaderRule[] {
+  const now = Date.now()
+  if (now - headersCheckedAt < 2000) return headerRules
+  headersCheckedAt = now
+  let real: string
   try {
-    headerRules = parseHeadersFile(await Deno.readTextFile(`${WEB_ROOT}/_headers`))
+    real = Deno.realPathSync(WEB_ROOT!)
   } catch {
+    return headerRules
+  }
+  if (real === headersOf) return headerRules
+  headersOf = real
+  try {
+    headerRules = parseHeadersFile(Deno.readTextFileSync(`${real}/_headers`))
+  } catch {
+    headerRules = []
     console.warn(`no ${WEB_ROOT}/_headers`)
   }
+  return headerRules
 }
 
 function isFile(path: string): boolean {
@@ -164,11 +182,12 @@ function isFile(path: string): boolean {
 async function serveWeb(req: Request, url: URL): Promise<Response> {
   if (req.method !== 'GET' && req.method !== 'HEAD') return new Response('method not allowed', { status: 405, headers: { allow: 'GET, HEAD' } })
   const found = resolveWebPath(url.pathname, isFile)
-  const base = headersFor(headerRules, url.pathname)
+  const rules = currentHeaderRules()
+  const base = headersFor(rules, url.pathname)
   if ('notFound' in found) return new Response('not found', { status: 404, headers: { ...base, 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } })
   const stat = await Deno.stat(WEB_ROOT + found.file)
   const etag = `W/"${stat.size.toString(36)}-${(stat.mtime?.getTime() ?? 0).toString(36)}"`
-  const headers = new Headers({ ...headersFor(headerRules, found.file), ...base, 'content-type': contentType(found.file), etag })
+  const headers = new Headers({ ...headersFor(rules, found.file), ...base, 'content-type': contentType(found.file), etag })
   // Pages and the service worker must always be revalidated; hashed assets are immutable (_headers).
   if (!headers.has('cache-control')) headers.set('cache-control', found.file.endsWith('.html') || found.file.endsWith('.webmanifest') ? 'no-cache' : 'public, max-age=3600')
   if (req.headers.get('if-none-match') === etag) return new Response(null, { status: 304, headers })

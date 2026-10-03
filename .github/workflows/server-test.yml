@@ -1,0 +1,110 @@
+# The server installer, end to end, on a fresh Ubuntu 24.04 machine (this runner plays the
+# server): scripts/server/deploy.sh over SSH to localhost -> install.sh, migrations, studios,
+# web app -> the e2e suite over HTTPS on one origin -> a second deploy (update in place) ->
+# backup, notifications, housekeeping, and what listens on the network.
+name: Server install test
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'server/**'
+      - 'deploy/server/**'
+      - 'scripts/server/**'
+      - '.github/workflows/server-test.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: server-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      DP_RELEASE_DIR: ${{ github.workspace }}/.local/release
+      DP_SSH_HOST: localhost
+      DP_DOMAIN: localhost
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Platform bundle (cached by pinned versions)
+        uses: actions/cache@v4
+        with:
+          path: .local/release/platform-*.tar.gz
+          key: dp-platform-${{ hashFiles('deploy/server/versions.env', 'scripts/server/build-platform.sh', 'package.json') }}
+
+      - name: SSH into this machine
+        run: |
+          sudo apt-get install -yq openssh-server >/dev/null
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          ssh-keygen -q -t ed25519 -N '' -f ~/.ssh/dp_test
+          cat ~/.ssh/dp_test.pub >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys
+          sudo systemctl start ssh
+          echo "DP_SSH_USER=$(whoami)" >> "$GITHUB_ENV"
+          echo "DP_SSH_KNOWN_HOSTS=localhost $(sudo cat /etc/ssh/ssh_host_ed25519_key.pub | cut -d' ' -f1,2)" >> "$GITHUB_ENV"
+
+      - name: Deploy
+        run: |
+          export DP_SSH_KEY="$(cat ~/.ssh/dp_test)"
+          export TENANT_DEMO_OWNER_PASSWORD="demo-$(openssl rand -hex 12)"
+          bash scripts/server/deploy.sh
+
+      - name: E2E over HTTPS, one origin
+        run: |
+          pnpm exec playwright install --with-deps chromium >/dev/null
+          s() { sudo sed -n "s/^$1=//p" /etc/dp/secrets.env; }
+          export SUPABASE_ANON_KEY="$(s DP_ANON_KEY)" SUPABASE_SERVICE_ROLE_KEY="$(s DP_SERVICE_ROLE_KEY)"
+          echo "::add-mask::$SUPABASE_SERVICE_ROLE_KEY"
+          pg="$(s DP_PG_PASSWORD)"; echo "::add-mask::$pg"
+          export DATABASE_URL="postgres://postgres:$pg@127.0.0.1:5432/dp"
+          E2E_BASE_URL=https://localhost E2E_IGNORE_HTTPS_ERRORS=1 pnpm test:e2e
+
+      - name: Second deploy (update in place, data kept)
+        run: |
+          before="$(sudo -u postgres psql -XtAq -d dp -c 'select count(*) from public.tenants')"
+          export DP_SSH_KEY="$(cat ~/.ssh/dp_test)"
+          export TENANT_DEMO_OWNER_PASSWORD="demo-$(openssl rand -hex 12)"
+          bash scripts/server/deploy.sh 2>&1 | tee deploy2.log
+          grep -q "уже на сервере" deploy2.log
+          after="$(sudo -u postgres psql -XtAq -d dp -c 'select count(*) from public.tenants')"
+          test "$before" = "$after"
+
+      - name: Timers, backup, network
+        run: |
+          set -x
+          sudo systemctl start dp-dispatch.service dp-housekeeping.service dp-backup.service
+          for u in dp-dispatch dp-housekeeping dp-backup; do systemctl show -p Result --value "$u.service" | grep -qx success; done
+          sudo ls -l /var/backups/dp
+          sudo sh -c 'pg_restore --list /var/backups/dp/db-*.dump | grep -c "TABLE DATA"'
+          systemctl list-timers 'dp-*' --no-pager
+          # Only Caddy (80, 443) and SSH face the network; every platform service is on 127.0.0.1.
+          sudo ss -ltnpH | tee listeners.txt
+          if grep -E 'gotrue|postgrest|"node"|"deno"|postgres' listeners.txt | grep -vE '127\.0\.0\.1:|\[::1\]:'; then echo "a platform service listens beyond loopback"; exit 1; fi
+          grep -E ':(80|443) .*caddy' listeners.txt
+          # Old scripts stay loadable for one more build; missing files are real 404s.
+          curl -sk -o /dev/null -w '%{http_code}\n' https://localhost/assets/nope.js | grep -qx 404
+          curl -sk -o /dev/null -w '%{http_code}\n' https://localhost/_headers | grep -qx 404
+          curl -sk --compressed -D - -o /dev/null https://localhost/s/graphite/ | grep -i -E '^(cache-control|strict-transport-security|content-encoding)'
+
+      - name: Logs
+        if: failure()
+        run: |
+          for u in dp-auth dp-rest dp-storage dp-gateway dp-caddy; do echo "=== $u"; sudo journalctl -u "$u" -n 80 --no-pager || true; done

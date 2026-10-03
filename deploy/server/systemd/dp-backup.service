@@ -1,0 +1,9 @@
+[Unit]
+Description=DP backup: database dump + uploaded files to /var/backups/dp (daily)
+After=postgresql.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/dp/app/current/deploy/server/bin/backup.sh
+Nice=10
+IOSchedulingClass=idle

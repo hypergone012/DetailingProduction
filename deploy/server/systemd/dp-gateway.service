@@ -1,0 +1,38 @@
+[Unit]
+Description=DP gateway: the web app and every API on one origin (server/gateway.ts) on 127.0.0.1:54321
+After=network-online.target dp-auth.service dp-rest.service dp-storage.service
+Wants=network-online.target
+
+[Service]
+User=dp
+Group=dp
+EnvironmentFile=/etc/dp/gateway.env
+Environment=DENO_DIR=/opt/dp/app/current/deno-dir
+Environment=DENO_NO_UPDATE_CHECK=1
+Environment=NO_COLOR=1
+WorkingDirectory=/opt/dp/app/current
+# --cached-only: every dependency ships with the release; nothing is downloaded at run time.
+ExecStart=/opt/dp/platform/current/bin/deno run --cached-only --no-prompt --allow-net --allow-env --allow-read=/opt/dp --config /opt/dp/app/current/supabase/functions/deno.json /opt/dp/app/current/server/gateway.ts
+Restart=always
+RestartSec=2
+CapabilityBoundingSet=
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target
