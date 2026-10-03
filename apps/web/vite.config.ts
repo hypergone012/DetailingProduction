@@ -63,7 +63,7 @@ function preloadAppChunks(): Plugin {
     apply: 'build',
     transformIndexHtml: {
       order: 'post',
-      handler(_html, ctx) {
+      handler(html, ctx) {
         const chunks = Object.values(ctx.bundle ?? {}).filter((c) => c.type === 'chunk')
         const byName = new Map(chunks.map((c) => [c.fileName, c]))
         const entry = chunks.find((c) => c.isEntry)
@@ -82,9 +82,13 @@ function preloadAppChunks(): Plugin {
         }
         const client = app(/features\/client\/ClientApp\.tsx$/)
         const owner = app(/features\/owner\/OwnerApp\.tsx$/)
-        if (!client.length && !owner.length) return []
+        if (!client.length && !owner.length) return html
         const code = `(function(){var m=/^\\/s\\/[a-z0-9-]+(\\/owner(?:\\/|$))?/.exec(location.pathname);if(!m)return;(m[1]?${JSON.stringify(owner)}:${JSON.stringify(client)}).forEach(function(f){var l=document.createElement('link');l.rel='modulepreload';l.crossOrigin='';l.href='/'+f;document.head.appendChild(l)})})()`
-        return [{ tag: 'script', children: code, injectTo: 'head' as const }]
+        // Before the stylesheet: a classic script placed after it would wait for the CSS to
+        // download before running, and the app's chunks would start a round trip later.
+        const at = html.indexOf('<link rel="stylesheet"')
+        if (at < 0) throw new Error('dp-preload-app-chunks: no stylesheet link in index.html')
+        return `${html.slice(0, at)}<script>${code}</script>\n    ${html.slice(at)}`
       },
     },
   }
