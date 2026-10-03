@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
-import { E2E_FILE, type E2eStudio } from './global-setup.ts'
+import { E2E_FILE, e2eKeys, GATEWAY, type E2eStudio } from './global-setup.ts'
 
 const studio = JSON.parse(readFileSync(E2E_FILE, 'utf8')) as E2eStudio
 
@@ -62,8 +61,8 @@ test('a client books online and the owner sees the booking in the cabinet', asyn
   await expect(ownerSheet.getByText('Toyota Camry')).toBeVisible()
 
   // The booking is also on its day in the resource-lane calendar.
-  const keys = JSON.parse(readFileSync(join(import.meta.dirname, '../../.local/keys.json'), 'utf8')) as { serviceRoleKey: string }
-  const [row] = (await fetch(`http://127.0.0.1:54321/rest/v1/bookings?select=starts_at&tenant_id=eq.${studio.id}&code=eq.${code}`, {
+  const keys = e2eKeys()
+  const [row] = (await fetch(`${GATEWAY}/rest/v1/bookings?select=starts_at&tenant_id=eq.${studio.id}&code=eq.${code}`, {
     headers: { apikey: keys.serviceRoleKey, authorization: `Bearer ${keys.serviceRoleKey}` },
   }).then((r) => r.json())) as { starts_at: string }[]
   const day = new Intl.DateTimeFormat('en-CA', { timeZone: studio.timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(row!.starts_at))

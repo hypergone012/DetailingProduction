@@ -1,13 +1,18 @@
 import { RefreshCw, TriangleAlert } from 'lucide-react'
+import { useEffect } from 'react'
 import { isRouteErrorResponse, useRouteError } from 'react-router'
 import { Button } from '@/components/ui/button'
+import { isStaleBuildError, reloadForNewBuild } from '@/pwa/chunk-recovery'
 import { StatusScreen } from './StatusScreen'
 
 export function RouteError() {
   const error = useRouteError()
   const notFound = isRouteErrorResponse(error) && error.status === 404
-  // Chunk load failure after a deploy: a reload fetches the new build.
-  const stale = error instanceof Error && /dynamically imported module|Failed to fetch|Importing a module script failed/i.test(error.message)
+  // Chunk load failure after a deploy: a reload fetches the new build (once by itself).
+  const stale = isStaleBuildError(error)
+  useEffect(() => {
+    if (stale) reloadForNewBuild()
+  }, [stale])
   return (
     <StatusScreen
       icon={<TriangleAlert />}

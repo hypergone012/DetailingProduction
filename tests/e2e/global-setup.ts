@@ -7,7 +7,7 @@ import { tenantConfig } from '../fixtures/tenant.ts'
 
 const ROOT = join(import.meta.dirname, '../..')
 // E2E_API_URL / SUPABASE_*_KEY: the API of a server under test (the server installer test).
-const GATEWAY = process.env.E2E_API_URL?.replace(/\/$/, '') ?? 'http://127.0.0.1:54321'
+export const GATEWAY = process.env.E2E_API_URL?.replace(/\/$/, '') ?? 'http://127.0.0.1:54321'
 export const E2E_FILE = join(ROOT, '.local/e2e-tenant.json')
 
 export interface E2eStudio {
@@ -18,6 +18,14 @@ export interface E2eStudio {
   ownerEmail: string
   ownerPassword: string
   serviceName: string
+}
+
+/** The API keys of the stack under test: SUPABASE_*_KEY (a server) or the local stack's. */
+export function e2eKeys(): { anonKey: string; serviceRoleKey: string } {
+  if (process.env.SUPABASE_ANON_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return { anonKey: process.env.SUPABASE_ANON_KEY, serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY }
+  }
+  return JSON.parse(readFileSync(join(ROOT, '.local/keys.json'), 'utf8')) as { anonKey: string; serviceRoleKey: string }
 }
 
 async function up(url: string, headers: Record<string, string> = {}): Promise<boolean> {
@@ -38,10 +46,7 @@ export default async function globalSetup() {
   ] as const) {
     if (!(await up(url))) throw new Error(`local stack is not running (${name}). Run: pnpm stack start`)
   }
-  const keys =
-    process.env.SUPABASE_ANON_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY
-      ? { anonKey: process.env.SUPABASE_ANON_KEY, serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY }
-      : (JSON.parse(readFileSync(join(ROOT, '.local/keys.json'), 'utf8')) as { anonKey: string; serviceRoleKey: string })
+  const keys = e2eKeys()
   let gateway: ChildProcess | null = null
   if (!(await up(`${GATEWAY}/functions/v1/public-api/push/config`, { apikey: keys.anonKey }))) {
     gateway = spawn('pnpm', ['-s', 'functions:serve'], { cwd: ROOT, stdio: 'ignore', detached: true })

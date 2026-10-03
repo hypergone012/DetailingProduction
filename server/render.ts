@@ -87,6 +87,8 @@ export function renderServer(secrets: Record<SecretKey, string>, cfg: ServerConf
     API_EXTERNAL_URL: `${origin}/auth/v1`,
     GOTRUE_SITE_URL: origin,
     GOTRUE_URI_ALLOW_LIST: `${origin}/**`,
+    // Links in e-mails use the site's address that Caddy forwards.
+    GOTRUE_MAILER_EXTERNAL_HOSTS: cfg.domain,
     GOTRUE_API_HOST: '127.0.0.1',
     PORT: String(PORTS.auth),
     GOTRUE_JWT_SECRET: secrets.DP_JWT_SECRET,

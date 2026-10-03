@@ -1,0 +1,134 @@
+# Deploys the platform to your own server in Russia (one Ubuntu 24.04 VPS): the site, the API,
+# sign-in and photos on one address, nothing behind foreign CDNs. Step-by-step: DEPLOY-RU.md.
+# Every run is safe to repeat: it updates the server in place and keeps bookings, customers,
+# photos and the server's secrets.
+name: Deploy server (Russia)
+
+on:
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: 'Домен сайта (например app.studio.ru). Его DNS-запись A должна указывать на IP сервера.'
+        required: true
+      migrate_from_supabase:
+        description: 'Один раз, при переезде: перенести записи, клиентов, аккаунты, фото и ключи из Supabase (только на пустой сервер).'
+        type: boolean
+        default: false
+      check_from_russia:
+        description: 'Проверить, что сайт открывается из России (зонды Globalping в РФ).'
+        type: boolean
+        default: true
+      check_studio:
+        description: 'Адрес студии для проверки из России (/s/<адрес>/).'
+        required: false
+        default: 'graphite'
+
+concurrency:
+  group: deploy-server
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      DP_SSH_HOST: ${{ secrets.SERVER_HOST }}
+      DP_SSH_USER: ${{ secrets.SERVER_USER }}
+      DP_SSH_PORT: ${{ secrets.SERVER_PORT }}
+      DP_SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+      DP_SSH_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+      DP_SSH_KNOWN_HOSTS: ${{ secrets.SERVER_HOST_KEY }}
+      DP_DOMAIN: ${{ inputs.domain }}
+      DP_ACME_EMAIL: ${{ secrets.ACME_EMAIL }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      LLM_MODEL: ${{ vars.LLM_MODEL }}
+      LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      SMTP_SENDER: ${{ secrets.SMTP_SENDER }}
+      DEMO_OWNER_PASSWORD: ${{ secrets.DEMO_OWNER_PASSWORD }}
+      DP_RELEASE_DIR: ${{ github.workspace }}/.local/release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Проверить секреты сервера
+        shell: bash
+        run: |
+          problems=0
+          [ -n "$DP_SSH_HOST" ] || { echo "::error::Не задан секрет SERVER_HOST (IP-адрес сервера)."; problems=1; }
+          [ -n "$DP_SSH_KEY$DP_SSH_PASSWORD" ] || { echo "::error::Нужен секрет SERVER_SSH_KEY (закрытый SSH-ключ) или SERVER_PASSWORD (пароль root)."; problems=1; }
+          [ -n "$DEMO_OWNER_PASSWORD" ] || { echo "::error::Не задан секрет DEMO_OWNER_PASSWORD (пароль демо-кабинета)."; problems=1; }
+          [ "$problems" = 0 ]
+          echo "TENANT_DEMO_OWNER_PASSWORD=$(printf '%s' "$DEMO_OWNER_PASSWORD" | tr -d '\r\n' | sed 's/^ *//; s/ *$//')" >> "$GITHUB_ENV"
+          if [ -z "$DP_SSH_KEY" ]; then sudo apt-get install -yq sshpass >/dev/null; fi
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Установить зависимости
+        run: pnpm install --frozen-lockfile
+
+      - name: Платформа (кеш по закреплённым версиям)
+        uses: actions/cache@v4
+        with:
+          path: .local/release/platform-*.tar.gz
+          key: dp-platform-${{ hashFiles('deploy/server/versions.env', 'scripts/server/build-platform.sh', 'package.json') }}
+
+      # ---- only when moving from Supabase: the hosted project's access (existing secrets).
+      - uses: supabase/setup-cli@v1
+        if: inputs.migrate_from_supabase
+        with:
+          version: 2.119.0
+
+      - name: Supabase — доступ для переноса
+        if: inputs.migrate_from_supabase
+        env:
+          RAW_SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          RAW_SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          RAW_SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          RAW_SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          RAW_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RAW_CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          RAW_DEMO_OWNER_PASSWORD: ${{ secrets.DEMO_OWNER_PASSWORD }}
+          RAW_LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          PAGES_PROJECT: detailing-studio
+        shell: bash
+        run: |
+          pnpm -s deploy:step check
+          pnpm -s deploy:step keys
+
+      - name: Supabase — источник переноса
+        if: inputs.migrate_from_supabase
+        shell: bash
+        run: |
+          {
+            echo "DP_MIGRATE_FROM_SUPABASE=1"
+            echo "SOURCE_DATABASE_URL=$DATABASE_URL"
+            echo "SOURCE_SUPABASE_URL=https://$SUPABASE_PROJECT_REF.supabase.co"
+            echo "SOURCE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY"
+          } >> "$GITHUB_ENV"
+
+      - name: Выкладка на сервер
+        shell: bash
+        run: bash scripts/server/deploy.sh
+
+      - name: Проверка из России
+        if: inputs.check_from_russia
+        shell: bash
+        env:
+          STUDIO: ${{ inputs.check_studio }}
+        run: node scripts/ops/net-diagnose.mjs "https://${DP_DOMAIN#https://}/s/${STUDIO:-graphite}/" --require-ru

@@ -10,12 +10,15 @@
  *    "first 16 KB then stall" throttling of foreign CDNs shows up as failures or timeouts on
  *    the large files while the small page still loads.
  *
+ * --require-ru: exit 1 unless every part of the site loads from at least half of the Russian
+ * Globalping probes (the server deploy's final check).
+ *
  * Prints only public facts (hostnames, headers, timings): no keys, no tokens.
  */
 import { promises as dns } from 'node:dns'
 import tls from 'node:tls'
 
-const pageUrl = new URL(process.argv[2] ?? 'https://detailing-studio-6wl.pages.dev/s/graphite/')
+const pageUrl = new URL(process.argv.slice(2).find((a) => !a.startsWith('--')) ?? 'https://detailing-studio-6wl.pages.dev/s/graphite/')
 const out = []
 const log = (s = '') => {
   console.log(s)
@@ -157,6 +160,8 @@ log()
 // ---------------------------------------------------------------------------------------
 // Probes inside Russia.
 const ruTargets = targets.filter(([what]) => ['page (HTML)', 'entry JS', 'CSS', 'API: studio data', 'photo (cover)'].includes(what))
+/** what -> results of the Russian probes (--require-ru turns them into a verdict). */
+const ruResults = new Map()
 
 async function globalping() {
   log('## From Russia: Globalping probes (HTTP GET, full timings)')
@@ -196,6 +201,8 @@ async function globalping() {
     for (const p of result.results) {
       const r = p.result
       const t = r.timings ?? {}
+      const code = Number(r.statusCode)
+      ruResults.set(what, [...(ruResults.get(what) ?? []), r.status === 'finished' && code >= 200 && code < 400])
       log(`| ${what} | ${p.probe.city}, ${p.probe.network} (AS${p.probe.asn}) | ${r.statusCode ?? r.status} | ${t.firstByte ?? '-'} ms | ${t.download ?? '-'} ms | ${t.total ?? '-'} ms | ${r.status === 'finished' ? '' : (r.rawOutput ?? '').slice(0, 80).replace(/\|/g, '/')} |`)
     }
   }
@@ -253,7 +260,28 @@ async function checkHost() {
 await globalping()
 await checkHost()
 
+// --require-ru: the deploy's check. Every part of the site must load from at least half of the
+// Russian probes; no probe data at all is reported as "not confirmed", never as a pass.
+let verdict = 0
+if (process.argv.includes('--require-ru')) {
+  log('## Verdict: reachable from Russia?')
+  const counted = ruTargets.map(([what]) => [what, ruResults.get(what) ?? []])
+  if (counted.every(([, r]) => r.length === 0)) {
+    log('NOT CONFIRMED: the Russian probes gave no results (service limit or outage). Run "Diagnose network" again later.')
+  } else {
+    for (const [what, r] of counted) {
+      const okN = r.filter(Boolean).length
+      const pass = r.length > 0 && okN * 2 >= r.length
+      log(`- ${what}: ${okN}/${r.length} probes OK — ${pass ? 'pass' : 'FAIL'}`)
+      if (!pass) verdict = 1
+    }
+    log(verdict ? 'FAIL: some parts of the site do not load from Russia.' : 'PASS: every part of the site loaded from the Russian probes.')
+  }
+  log()
+}
+
 if (process.env.GITHUB_STEP_SUMMARY) {
   const { appendFileSync } = await import('node:fs')
   appendFileSync(process.env.GITHUB_STEP_SUMMARY, out.join('\n') + '\n')
 }
+process.exit(verdict)
